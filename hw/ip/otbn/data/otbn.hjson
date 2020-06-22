@@ -62,6 +62,16 @@
             The completion is signalled by the done interrupt.
           '''
         }
+        { bits: "1",
+          name: "dummy",
+          desc: '''
+            Reggen doesn't generate sub-fields with only a single field
+            specified; instead, the whole register is taken as a field, leading
+            to signals like `hw2reg.status.d` instead of
+            `hw2reg.status.start.d`. Since we expect to add more commands later,
+            we force the generation of fields with this dummy field for now.
+          '''
+        }
       ],
     }
     { name: "STATUS",
@@ -73,6 +83,12 @@
         { bits: "0",
           name: "busy",
           desc: "OTBN is performing an operation."
+        }
+        { bits: "1",
+          name: "dummy",
+          desc: '''
+            See !!CMD.dummy for details.
+          '''
         }
       ]
     } // register : status
