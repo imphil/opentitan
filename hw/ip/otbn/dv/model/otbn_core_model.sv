@@ -33,10 +33,9 @@ module otbn_core_model
 
   input  logic [ImemAddrWidth-1:0] start_addr_i, // start byte address in IMEM
 
-  // Instruction memory (IMEM)
+  // Instruction memory (IMEM). Read-only.
   output logic                     imem_req_o,
   output logic [ImemAddrWidth-1:0] imem_addr_o,
-  output logic [31:0]              imem_wdata_o,
   input  logic [31:0]              imem_rdata_i,
   input  logic                     imem_rvalid_i,
   input  logic [1:0]               imem_rerror_i,
