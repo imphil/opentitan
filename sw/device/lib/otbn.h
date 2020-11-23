@@ -188,7 +188,7 @@ otbn_result_t otbn_load_app(otbn_t *ctx, const otbn_app_t *app);
  * @param func The function to be called.
  * @return The result of the operation.
  */
-otbn_result_t otbn_call_function(otbn_t *ctx, const otbn_ptr_t func);
+otbn_result_t otbn_call_function(otbn_t *ctx, const uint32_t func);
 
 /**
  * Busy waits for OTBN to be done with its operation.

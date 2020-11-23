@@ -4,16 +4,28 @@
 
 .text
 
- .globl rsa_encrypt
+.globl FUNC_RSA_ENCRYPT
+.set FUNC_RSA_ENCRYPT, 1
+
+.globl FUNC_RSA_DECRYPT
+.set FUNC_RSA_DECRYPT, 2
+
+.globl main
+main:
+  lui     x7,%hi(func)
+  lw      x6,%lo(func)(x7)
+
+  addi    x7,x0,FUNC_RSA_ENCRYPT
+  beq     x6,x7,rsa_encrypt
+
+  addi    x7,x0,FUNC_RSA_DECRYPT
+  beq     x6,x7,rsa_decrypt
+
 rsa_encrypt:
   jal      x1, modload
   jal      x1, modexp_65537
   ecall
 
-/**
- * RSA decryption
- */
-.globl rsa_decrypt
 rsa_decrypt:
   jal      x1, modload
   jal      x1, modexp
@@ -27,8 +39,10 @@ The structure of the 256b below are mandated by the calling convention of the
 RSA library.
 */
 
-/* reserved */
-.word 0x00000000
+/* Operation to be executed. See FUNC_* constants for values. */
+.globl func
+func:
+  .word 0x00000000
 
 /* Key/modulus size in 256b limbs (i.e. for RSA-1024: N = 4) */
 .globl n_limbs

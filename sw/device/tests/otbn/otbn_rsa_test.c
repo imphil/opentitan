@@ -65,8 +65,6 @@ static const bool kTestDecrypt = true;
 static const bool kTestRsaGreater1k = false;
 
 OTBN_USE_APP(rsa);
-OTBN_USE_PTR(rsa, rsa_encrypt);
-OTBN_USE_PTR(rsa, rsa_decrypt);
 OTBN_USE_PTR(rsa, n_limbs);
 OTBN_USE_PTR(rsa, in);
 OTBN_USE_PTR(rsa, out);
@@ -74,15 +72,15 @@ OTBN_USE_PTR(rsa, modulus);
 OTBN_USE_PTR(rsa, exp);
 
 static const otbn_app_t kOtbnAppRsa = OTBN_APP_T_INIT(rsa);
-static const otbn_ptr_t kOtbnFuncRsaRsaEncrypt =
-    OTBN_PTR_T_INIT(rsa, rsa_encrypt);
-static const otbn_ptr_t kOtbnFuncRsaRsaDecrypt =
-    OTBN_PTR_T_INIT(rsa, rsa_decrypt);
 static const otbn_ptr_t kOtbnVarRsaNLimbs = OTBN_PTR_T_INIT(rsa, n_limbs);
 static const otbn_ptr_t kOtbnVarRsaIn = OTBN_PTR_T_INIT(rsa, in);
 static const otbn_ptr_t kOtbnVarRsaOut = OTBN_PTR_T_INIT(rsa, out);
 static const otbn_ptr_t kOtbnVarRsaModulus = OTBN_PTR_T_INIT(rsa, modulus);
 static const otbn_ptr_t kOtbnVarRsaExp = OTBN_PTR_T_INIT(rsa, exp);
+
+// Constants for callable function entry points
+extern const char _otbn_app_rsa_FUNC_RSA_ENCRYPT[];
+extern const char _otbn_app_rsa_FUNC_RSA_DECRYPT[];
 
 enum {
   kRsa512SizeBytes = 512 / 8,
@@ -124,7 +122,7 @@ static void rsa_encrypt(otbn_t *otbn_ctx, const uint8_t *modulus,
         kOtbnOk);
 
   // Call OTBN to perform operation, and wait for it to complete.
-  CHECK(otbn_call_function(otbn_ctx, kOtbnFuncRsaRsaEncrypt) == kOtbnOk);
+  CHECK(otbn_call_function(otbn_ctx, (uint32_t)_otbn_app_rsa_FUNC_RSA_ENCRYPT) == kOtbnOk);
   CHECK(otbn_busy_wait_for_done(otbn_ctx) == kOtbnOk);
 
   // Read back results.
@@ -165,7 +163,7 @@ static void rsa_decrypt(otbn_t *otbn_ctx, const uint8_t *modulus,
         kOtbnOk);
 
   // Call OTBN to perform operation
-  CHECK(otbn_call_function(otbn_ctx, kOtbnFuncRsaRsaDecrypt) == kOtbnOk);
+  CHECK(otbn_call_function(otbn_ctx, (uint32_t)_otbn_app_rsa_FUNC_RSA_DECRYPT) == kOtbnOk);
   CHECK(otbn_busy_wait_for_done(otbn_ctx) == kOtbnOk);
 
   // Read back results.

@@ -118,7 +118,7 @@ otbn_result_t otbn_load_app(otbn_t *ctx, const otbn_app_t *app) {
   return kOtbnOk;
 }
 
-otbn_result_t otbn_call_function(otbn_t *ctx, const otbn_ptr_t func) {
+otbn_result_t otbn_call_function(otbn_t *ctx, const uint32_t func) {
   if (ctx == NULL || ctx->app == NULL) {
     return kOtbnBadArg;
   }
@@ -126,13 +126,12 @@ otbn_result_t otbn_call_function(otbn_t *ctx, const otbn_ptr_t func) {
     return kOtbnAppNotLoaded;
   }
 
-  uint32_t func_imem_addr;
-  otbn_result_t result = func_ptr_to_otbn_imem_addr(ctx, func, &func_imem_addr);
-  if (result != kOtbnOk) {
-    return result;
+  // func selection is conventionally a uint32_t at address 0x0 in DMEM.
+  if (dif_otbn_dmem_write(&ctx->dif, 0, &func, sizeof(func)) != kDifOtbnOk) {
+    return kOtbnError;
   }
 
-  if (dif_otbn_start(&ctx->dif, func_imem_addr) != kDifOtbnOk) {
+  if (dif_otbn_start(&ctx->dif, /*start_addr=*/0) != kDifOtbnOk) {
     return kOtbnError;
   }
 
