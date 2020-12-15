@@ -22,11 +22,11 @@ class OTBNSim:
         self.state.dmem.load_le_words(data)
 
     def run(self, verbose: bool) -> int:
-        '''Run until ECALL.
+        """Run until ECALL.
 
         Return the number of cycles taken.
 
-        '''
+        """
         insn_count = 0
         while self.state.running:
             self.step(verbose)
@@ -35,13 +35,13 @@ class OTBNSim:
         return insn_count
 
     def step(self, verbose: bool) -> Tuple[Optional[OTBNInsn], List[Trace]]:
-        '''Run a single instruction.
+        """Run a single instruction.
 
         Returns the instruction, together with a list of the architectural
         changes that have happened. If the model isn't currently running,
         returns no instruction and no changes.
 
-        '''
+        """
         if not self.state.running:
             return (None, [])
 
@@ -55,14 +55,15 @@ class OTBNSim:
             else:
                 word_pc = int(self.state.pc) >> 2
                 if word_pc >= len(self.program):
-                    raise RuntimeError('Trying to execute instruction at address '
-                                       '{:#x}, but the program is only {:#x} '
-                                       'bytes ({} instructions) long. Since there '
-                                       'are no architectural contents of the '
-                                       'memory here, we have to stop.'
-                                       .format(int(self.state.pc),
-                                               4 * len(self.program),
-                                               len(self.program)))
+                    raise RuntimeError(
+                        "Trying to execute instruction at address "
+                        "{:#x}, but the program is only {:#x} "
+                        "bytes ({} instructions) long. Since there "
+                        "are no architectural contents of the "
+                        "memory here, we have to stop.".format(
+                            int(self.state.pc), 4 * len(self.program), len(self.program)
+                        )
+                    )
                 insn = self.program[word_pc]
 
                 if insn.insn.cycles > 1:
@@ -90,8 +91,7 @@ class OTBNSim:
             changes = self.state.changes()
 
         if verbose:
-            disasm = ('(stall)' if insn is None
-                      else insn.disassemble(pc_before))
+            disasm = "(stall)" if insn is None else insn.disassemble(pc_before)
             self._print_trace(pc_before, disasm, changes)
 
         return (insn, changes)
@@ -100,6 +100,6 @@ class OTBNSim:
         return self.state.dmem.dump_le_words()
 
     def _print_trace(self, pc: int, disasm: str, changes: List[Trace]) -> None:
-        '''Print a trace of the current instruction to verbose_file'''
-        changes_str = ', '.join([t.trace() for t in changes])
-        print('{:08x} | {:35} | [{}]'.format(pc, disasm, changes_str))
+        """Print a trace of the current instruction to verbose_file"""
+        changes_str = ", ".join([t.trace() for t in changes])
+        print("{:08x} | {:35} | [{}]".format(pc, disasm, changes_str))

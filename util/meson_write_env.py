@@ -14,18 +14,17 @@ import sys
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--out-file',
-                        '-o',
-                        required=False,
-                        type=argparse.FileType('w'),
-                        default="env.txt",
-                        help="Output file (default: %(default)s)")
-    parser.add_argument('key_value_pairs',
-                        nargs='+',
-                        type=str,
-                        metavar='NAME=VALUE')
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--out-file",
+        "-o",
+        required=False,
+        type=argparse.FileType("w"),
+        default="env.txt",
+        help="Output file (default: %(default)s)",
+    )
+    parser.add_argument("key_value_pairs", nargs="+", type=str, metavar="NAME=VALUE")
     args = parser.parse_args()
 
     for arg in args.key_value_pairs:

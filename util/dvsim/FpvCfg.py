@@ -13,19 +13,34 @@ from utils import VERBOSE, subst_wildcards
 
 
 class FpvCfg(OneShotCfg):
-    """Derivative class for FPV purposes.
-    """
+    """Derivative class for FPV purposes."""
 
-    flow = 'fpv'
+    flow = "fpv"
 
     def __init__(self, flow_cfg_file, hjson_data, args, mk_config):
         super().__init__(flow_cfg_file, hjson_data, args, mk_config)
-        self.header = ["name", "errors", "warnings", "proven", "cex", "undetermined",
-                       "covered", "unreachable", "pass_rate", "cov_rate"]
-        self.summary_header = ["name", "pass_rate", "stimuli_cov", "coi_cov", "prove_cov"]
+        self.header = [
+            "name",
+            "errors",
+            "warnings",
+            "proven",
+            "cex",
+            "undetermined",
+            "covered",
+            "unreachable",
+            "pass_rate",
+            "cov_rate",
+        ]
+        self.summary_header = [
+            "name",
+            "pass_rate",
+            "stimuli_cov",
+            "coi_cov",
+            "prove_cov",
+        ]
         self.results_title = self.name.upper() + " FPV Results"
 
-    def parse_dict_to_str(self, input_dict, excl_keys = []):
+    def parse_dict_to_str(self, input_dict, excl_keys=[]):
         # This is a helper function to parse dictionary items into a string.
         # This function has an optional input "excl_keys" for user to exclude
         # printing out certain items according to their keys.
@@ -66,24 +81,27 @@ class FpvCfg(OneShotCfg):
             results_str = "No fpv_summary found\n"
             summary.append("N/A")
         else:
-            colalign = ("center", ) * len(self.header)
+            colalign = ("center",) * len(self.header)
             table = [self.header]
-            table.append([
-                self.name,
-                str(fpv_summary["errors"]) + " E ",
-                str(fpv_summary["warnings"]) + " W ",
-                str(fpv_summary["proven"]) + " G ",
-                str(fpv_summary["cex"]) + " E ",
-                str(fpv_summary["undetermined"]) + " W ",
-                str(fpv_summary["covered"]) + " G ",
-                str(fpv_summary["unreachable"]) + " E ",
-                fpv_summary["pass_rate"],
-                fpv_summary["cov_rate"]
-            ])
+            table.append(
+                [
+                    self.name,
+                    str(fpv_summary["errors"]) + " E ",
+                    str(fpv_summary["warnings"]) + " W ",
+                    str(fpv_summary["proven"]) + " G ",
+                    str(fpv_summary["cex"]) + " E ",
+                    str(fpv_summary["undetermined"]) + " W ",
+                    str(fpv_summary["covered"]) + " G ",
+                    str(fpv_summary["unreachable"]) + " E ",
+                    fpv_summary["pass_rate"],
+                    fpv_summary["cov_rate"],
+                ]
+            )
             summary.append(fpv_summary["pass_rate"])
             if len(table) > 1:
-                results_str = tabulate(table, headers="firstrow", tablefmt="pipe",
-                                       colalign=colalign)
+                results_str = tabulate(
+                    table, headers="firstrow", tablefmt="pipe", colalign=colalign
+                )
             else:
                 results_str = "No content in fpv_summary\n"
                 summary.append("N/A")
@@ -97,20 +115,22 @@ class FpvCfg(OneShotCfg):
             summary = ["N/A", "N/A", "N/A"]
         else:
             cov_header = ["stimuli", "coi", "proof"]
-            cov_colalign = ("center", ) * len(cov_header)
+            cov_colalign = ("center",) * len(cov_header)
             cov_table = [cov_header]
-            cov_table.append([
-                fpv_coverage["stimuli"],
-                fpv_coverage["coi"],
-                fpv_coverage["proof"]
-            ])
+            cov_table.append(
+                [fpv_coverage["stimuli"], fpv_coverage["coi"], fpv_coverage["proof"]]
+            )
             summary.append(fpv_coverage["stimuli"])
             summary.append(fpv_coverage["coi"])
             summary.append(fpv_coverage["proof"])
 
             if len(cov_table) > 1:
-                results_str = tabulate(cov_table, headers="firstrow",
-                                       tablefmt="pipe", colalign=cov_colalign)
+                results_str = tabulate(
+                    cov_table,
+                    headers="firstrow",
+                    tablefmt="pipe",
+                    colalign=cov_colalign,
+                )
 
             else:
                 results_str = "No content in fpv_coverage\n"
@@ -131,42 +151,47 @@ class FpvCfg(OneShotCfg):
         results_str += "### Branch: " + self.branch + "\n"
         results_str += "\n"
 
-        colalign = ("center", ) * len(self.summary_header)
+        colalign = ("center",) * len(self.summary_header)
         table = [self.summary_header]
         for cfg in self.cfgs:
             try:
                 table.append(cfg.result_summary[cfg.name])
             except KeyError as e:
                 table.append([cfg.name, "ERROR", "N/A", "N/A", "N/A"])
-                log.error("cfg: %s could not find generated results_summary: %s", cfg.name, e)
+                log.error(
+                    "cfg: %s could not find generated results_summary: %s", cfg.name, e
+                )
         if len(table) > 1:
             self.results_summary_md = results_str + tabulate(
-                table, headers="firstrow", tablefmt="pipe", colalign=colalign)
+                table, headers="firstrow", tablefmt="pipe", colalign=colalign
+            )
         else:
             self.results_summary_md = results_str
 
         log.info("[result summary]: %s", self.results_summary_md)
 
         # Generate email results summary
-        colalign = ("left", ) + ("center", ) * (len(self.header) - 1)
+        colalign = ("left",) + ("center",) * (len(self.header) - 1)
         email_table = [self.header]
         error_message = ""
 
         for cfg in self.cfgs:
             email_result = cfg.result.get("fpv_summary")
             if email_result is not None:
-                email_table.append([
-                    cfg.name,
-                    str(email_result["errors"]) + " E ",
-                    str(email_result["warnings"]) + " W ",
-                    str(email_result["proven"]) + " G ",
-                    str(email_result["cex"]) + " E ",
-                    str(email_result["undetermined"]) + " W ",
-                    str(email_result["covered"]) + " G ",
-                    str(email_result["unreachable"]) + " E ",
-                    email_result["pass_rate"],
-                    email_result["cov_rate"]
-                ])
+                email_table.append(
+                    [
+                        cfg.name,
+                        str(email_result["errors"]) + " E ",
+                        str(email_result["warnings"]) + " W ",
+                        str(email_result["proven"]) + " G ",
+                        str(email_result["cex"]) + " E ",
+                        str(email_result["undetermined"]) + " W ",
+                        str(email_result["covered"]) + " G ",
+                        str(email_result["unreachable"]) + " E ",
+                        email_result["pass_rate"],
+                        email_result["cov_rate"],
+                    ]
+                )
             messages = cfg.result.get("messages")
             if messages is not None:
                 # TODO: temp disable printing out "fpv_warnings" in results_summary
@@ -178,7 +203,8 @@ class FpvCfg(OneShotCfg):
 
         if len(email_table) > 1:
             self.email_summary_md = results_str + tabulate(
-                email_table, headers="firstrow", tablefmt="pipe", colalign=colalign)
+                email_table, headers="firstrow", tablefmt="pipe", colalign=colalign
+            )
         self.email_summary_md += error_message
 
         return self.results_summary_md
@@ -230,11 +256,16 @@ class FpvCfg(OneShotCfg):
 
         if len(self.build_modes) != 1:
             mode_names = [mode.name for mode in self.build_modes]
-            log.error("FPV only supports mode 'default', but found these modes: %s", mode_names)
+            log.error(
+                "FPV only supports mode 'default', but found these modes: %s",
+                mode_names,
+            )
         else:
             mode = self.build_modes[0]
-            result_data = Path(subst_wildcards(self.build_dir, {"build_mode": mode.name}) +
-                               '/results.hjson')
+            result_data = Path(
+                subst_wildcards(self.build_dir, {"build_mode": mode.name})
+                + "/results.hjson"
+            )
             try:
                 with open(result_data, "r") as results_file:
                     self.result = hjson.load(results_file, use_decimal=True)
@@ -252,8 +283,11 @@ class FpvCfg(OneShotCfg):
 
             if self.cov:
                 results_str += "\n\n## Coverage Results\n"
-                results_str += ("### Coverage html file dir: " +
-                                self.scratch_path + "/default/formal-icarus\n\n")
+                results_str += (
+                    "### Coverage html file dir: "
+                    + self.scratch_path
+                    + "/default/formal-icarus\n\n"
+                )
                 cov_result_str, cov_summary = self.get_fpv_coverage_results(self.result)
                 results_str += cov_result_str
                 summary += cov_summary
@@ -265,7 +299,7 @@ class FpvCfg(OneShotCfg):
         # Write results to the scratch area
         self.results_md = results_str
         results_file = self.scratch_path + "/results_" + self.timestamp + ".md"
-        with open(results_file, 'w') as f:
+        with open(results_file, "w") as f:
             f.write(self.results_md)
 
         # Generate result summary
@@ -277,9 +311,9 @@ class FpvCfg(OneShotCfg):
         return self.results_md
 
     def _publish_results(self):
-        '''This does nothing: detailed messages from FPV runs are not published
+        """This does nothing: detailed messages from FPV runs are not published
 
         Our agreement with tool vendors allows us to publish the summary
         results (as in gen_results_summary), but not anything more detailed.
-        '''
+        """
         return

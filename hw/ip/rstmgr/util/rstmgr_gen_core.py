@@ -46,28 +46,27 @@ def main():
     # are referenced from proj_root area.
     self_path = os.path.dirname(os.path.realpath(__file__))
 
-    if 'verbose' in gapi['parameters']:
-        if gapi['parameters'].get('verbose') == 1:
+    if "verbose" in gapi["parameters"]:
+        if gapi["parameters"].get("verbose") == 1:
             log.basicConfig(format="%(levelname)s: %(message)s", level=log.DEBUG)
         else:
             log.basicConfig(format="%(levelname)s: %(message)s")
 
     # Retrieve the parameters from the yml.
-    if 'path' not in gapi['parameters']:
+    if "path" not in gapi["parameters"]:
         log.error("path to RTL not supplied")
         sys.exit(1)
     else:
-        rtl_path = self_path + RSTMGR_ROOT + gapi['parameters']['path']
-        print("RTL path %s" % (rtl_path, ))
+        rtl_path = self_path + RSTMGR_ROOT + gapi["parameters"]["path"]
+        print("RTL path %s" % (rtl_path,))
 
     # Retrieve the command from the yml.
     cmd = ""
-    if 'cmd' not in gapi['parameters']:
+    if "cmd" not in gapi["parameters"]:
         log.error("command not given")
         sys.exit(1)
     else:
-        cmd = gapi['parameters']['cmd']
-
+        cmd = gapi["parameters"]["cmd"]
 
     # Copy generated rtl files
     copyfile(rtl_path + "/rstmgr_pkg.sv", "rstmgr_pkg.sv")
@@ -87,23 +86,23 @@ def main():
     core = OrderedDict()
     core["path"] = os.path.abspath("rstmgr_reg.core")
     core["text"] = {
-        'name': "lowrisc:ip_gen:rstmgr_reg:0.1",
-        'filesets': {
-            'files_rtl': {
-                'depend': [
+        "name": "lowrisc:ip_gen:rstmgr_reg:0.1",
+        "filesets": {
+            "files_rtl": {
+                "depend": [
                     "lowrisc:tlul:headers",
                 ],
-                'files': [
+                "files": [
                     "rstmgr_reg_pkg.sv",
                     "rstmgr_reg_top.sv",
                 ],
-                'file_type': 'systemVerilogSource'
+                "file_type": "systemVerilogSource",
             },
         },
-        'targets': {
-            'default': {
-                'filesets': [
-                    'files_rtl',
+        "targets": {
+            "default": {
+                "filesets": [
+                    "files_rtl",
                 ],
             },
         },
@@ -114,24 +113,24 @@ def main():
     core = OrderedDict()
     core["path"] = os.path.abspath("rstmgr_pkg.core")
     core["text"] = {
-        'name': "lowrisc:ip_gen:rstmgr_pkg:0.1",
-        'filesets': {
-            'files_rtl': {
-                'depend': [
+        "name": "lowrisc:ip_gen:rstmgr_pkg:0.1",
+        "filesets": {
+            "files_rtl": {
+                "depend": [
                     "lowrisc:constants:top_pkg",
                     "lowrisc:ip_gen:rstmgr_reg",
                     "lowrisc:ip:pwrmgr_pkg",
                 ],
-                'files': [
+                "files": [
                     "rstmgr_pkg.sv",
                 ],
-                'file_type': 'systemVerilogSource'
+                "file_type": "systemVerilogSource",
             },
         },
-        'targets': {
-            'default': {
-                'filesets': [
-                    'files_rtl',
+        "targets": {
+            "default": {
+                "filesets": [
+                    "files_rtl",
                 ],
             },
         },
@@ -142,45 +141,46 @@ def main():
     core = OrderedDict()
     core["path"] = os.path.abspath("rstmgr_component.core")
     core["text"] = {
-        'name': "lowrisc:ip_gen:rstmgr_component:0.1",
-        'filesets': {
-            'files_rtl': {
-                'depend': [
+        "name": "lowrisc:ip_gen:rstmgr_component:0.1",
+        "filesets": {
+            "files_rtl": {
+                "depend": [
                     "lowrisc:ip:tlul",
                     "lowrisc:ip_gen:rstmgr_reg",
                     "lowrisc:ip_gen:rstmgr_pkg",
                 ],
-                'files': [
+                "files": [
                     "rstmgr_ctrl.sv",
                     "rstmgr_por.sv",
                     "rstmgr_info.sv",
                 ],
-                'file_type': 'systemVerilogSource'
+                "file_type": "systemVerilogSource",
             },
         },
-        'targets': {
-            'default': {
-                'filesets': [
-                    'files_rtl',
+        "targets": {
+            "default": {
+                "filesets": [
+                    "files_rtl",
                 ],
             },
         },
     }
     cores.append(core)
 
-
     print("cores {}".format(cores))
 
     for core in cores:
-        with open(core['path'], 'w') as f:
+        with open(core["path"], "w") as f:
             f.write("CAPI=2:\n")
-            yaml.dump(core['text'],
-                      f,
-                      encoding="utf-8",
-                      default_flow_style=False,
-                      sort_keys=False)
-            print("core file written to {}".format(core['path']))
+            yaml.dump(
+                core["text"],
+                f,
+                encoding="utf-8",
+                default_flow_style=False,
+                sort_keys=False,
+            )
+            print("core file written to {}".format(core["path"]))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

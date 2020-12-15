@@ -36,31 +36,35 @@ def get_results(resdir):
         "warnings": [],
         "lint_errors": [],
         "lint_warnings": [],
-        "lint_infos": []
+        "lint_infos": [],
     }
     try:
         # check the log file for flow errors and warnings
-        with Path(resdir).joinpath('ascentlint.log').open() as f:
+        with Path(resdir).joinpath("ascentlint.log").open() as f:
             full_file = f.read()
-            err_warn_patterns = [("errors", r"^FlexNet Licensing error.*"),
-                                 ("errors", r"^Error: .*"),
-                                 ("errors", r"^ERROR.*"),
-                                 ("errors", r"^  ERR .*"),
-                                 ("warnings", r"^Warning: .*"),
-                                 # TODO: struct assignment labels within concatenation
-                                 # not supported. check with newer ascentlint version.
-                                 ("warnings", r"^  (?!WARN \[#39024\])WARN .*")]
+            err_warn_patterns = [
+                ("errors", r"^FlexNet Licensing error.*"),
+                ("errors", r"^Error: .*"),
+                ("errors", r"^ERROR.*"),
+                ("errors", r"^  ERR .*"),
+                ("warnings", r"^Warning: .*"),
+                # TODO: struct assignment labels within concatenation
+                # not supported. check with newer ascentlint version.
+                ("warnings", r"^  (?!WARN \[#39024\])WARN .*"),
+            ]
             extract_messages(full_file, err_warn_patterns, results)
     except IOError as err:
         results["errors"] += ["IOError: %s" % err]
 
     try:
         # check the report file for lint INFO, WARNING and ERRORs
-        with Path(resdir).joinpath('ascentlint.rpt').open() as f:
+        with Path(resdir).joinpath("ascentlint.rpt").open() as f:
             full_file = f.read()
-            err_warn_patterns = {("lint_errors", r"^E  .*"),
-                                 ("lint_warnings", r"^W  .*"),
-                                 ("lint_infos", r"^I  .*")}
+            err_warn_patterns = {
+                ("lint_errors", r"^E  .*"),
+                ("lint_warnings", r"^W  .*"),
+                ("lint_infos", r"^I  .*"),
+            }
             extract_messages(full_file, err_warn_patterns, results)
     except IOError as err:
         results["errors"] += ["IOError: %s" % err]
@@ -87,29 +91,32 @@ def main():
         'lint_' contain lint-related messages.
 
         The script returns nonzero status if any warnings or errors are present.
-        """)
-    parser.add_argument('--repdir',
-                        type=str,
-                        default="./",
-                        help="""The script searches the 'ascentlint.log' and
+        """
+    )
+    parser.add_argument(
+        "--repdir",
+        type=str,
+        default="./",
+        help="""The script searches the 'ascentlint.log' and
                         'ascentlint.rpt' files in this directory.
-                        Defaults to './'""")
+                        Defaults to './'""",
+    )
 
-    parser.add_argument('--outdir',
-                        type=str,
-                        default="./",
-                        help="""Output directory for the 'results.hjson' file.
-                        Defaults to './'""")
+    parser.add_argument(
+        "--outdir",
+        type=str,
+        default="./",
+        help="""Output directory for the 'results.hjson' file.
+                        Defaults to './'""",
+    )
 
     args = parser.parse_args()
     results = get_results(args.repdir)
 
     with Path(args.outdir).joinpath("results.hjson").open("w") as results_file:
-        hjson.dump(results,
-                   results_file,
-                   ensure_ascii=False,
-                   for_json=True,
-                   use_decimal=True)
+        hjson.dump(
+            results, results_file, ensure_ascii=False, for_json=True, use_decimal=True
+        )
 
     # return nonzero status if any warnings or errors are present
     # lint infos do not count as failures
@@ -121,7 +128,6 @@ def main():
 
     log.info("Lint logfile parsed succesfully")
     sys.exit(0)
-
 
 
 if __name__ == "__main__":

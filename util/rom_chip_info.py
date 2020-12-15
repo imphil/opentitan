@@ -31,17 +31,12 @@ static const char chip_info[128] __attribute__((section(".chip_info"))) =
 #endif  // _F_CHIPINFO_H__
 
 """
+
+
 def main():
     parser = argparse.ArgumentParser(prog="rom_chip_info")
-    parser.add_argument('--outdir',
-                        '-o',
-                        required=True,
-                        help='Output Directory'
-                        )
-    parser.add_argument('--ot_version',
-                        required=True,
-                        help='OpenTitan Version'
-                        )
+    parser.add_argument("--outdir", "-o", required=True, help="Output Directory")
+    parser.add_argument("--ot_version", required=True, help="OpenTitan Version")
 
     log.basicConfig(format="%(levelname)s: %(message)s")
     args = parser.parse_args()
@@ -66,10 +61,10 @@ def main():
     log.info("Build Date: %s" % (wall_time,))
 
     output = header_template
-    output = output.replace('{%version%}', version, 1)
-    output = output.replace('{%build_date%}', wall_time, 1)
+    output = output.replace("{%version%}", version, 1)
+    output = output.replace("{%build_date%}", wall_time, 1)
 
-    with out_path.open(mode='w', encoding='UTF-8') as fout:
+    with out_path.open(mode="w", encoding="UTF-8") as fout:
         fout.write(output + "\n")
 
 

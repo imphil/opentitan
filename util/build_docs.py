@@ -39,19 +39,17 @@ USAGE = """
 # Version of hugo extended to be used to build the docs
 try:
     tool_requirements = check_tool_requirements.read_tool_requirements()
-    HUGO_EXTENDED_VERSION = tool_requirements['hugo_extended']
+    HUGO_EXTENDED_VERSION = tool_requirements["hugo_extended"]
 except Exception as e:
     print("Unable to get required hugo version: %s" % str(e), file=sys.stderr)
     sys.exit(1)
 
 # Configurations
 # TODO: Move to config.yaml
-SRCTREE_TOP = Path(__file__).parent.joinpath('..').resolve()
+SRCTREE_TOP = Path(__file__).parent.joinpath("..").resolve()
 config = {
     # Toplevel source directory
-    "topdir":
-    SRCTREE_TOP,
-
+    "topdir": SRCTREE_TOP,
     # Pre-generate register and hwcfg fragments from these files.
     "hardware_definitions": [
         "hw/ip/aes/data/aes.hjson",
@@ -84,12 +82,10 @@ config = {
         "hw/ip/usbdev/data/usbdev.hjson",
         "hw/ip/usbuart/data/usbuart.hjson",
     ],
-
     # Pre-generate dashboard fragments from these directories.
     "dashboard_definitions": [
         "hw/ip",
     ],
-
     # Pre-generate testplan fragments from these files.
     "testplan_definitions": [
         "hw/ip/aes/data/aes_testplan.hjson",
@@ -115,32 +111,24 @@ config = {
         "hw/top_earlgrey/data/standalone_sw_testplan.hjson",
         "util/dvsim/testplanner/examples/foo_testplan.hjson",
     ],
-
     # Pre-generated utility selfdoc
     "selfdoc_tools": ["tlgen", "reggen"],
-
     # DIF Docs
     "difs-directory": "sw/device/lib/dif",
-
     # Output directory for documents
-    "outdir":
-    SRCTREE_TOP.joinpath('build', 'docs'),
-    "outdir-generated":
-    SRCTREE_TOP.joinpath('build', 'docs-generated'),
-    "verbose":
-    False,
+    "outdir": SRCTREE_TOP.joinpath("build", "docs"),
+    "outdir-generated": SRCTREE_TOP.joinpath("build", "docs-generated"),
+    "verbose": False,
 }
 
 
 def generate_dashboards():
     for dashboard in config["dashboard_definitions"]:
         hjson_paths = []
-        hjson_paths.extend(
-            sorted(SRCTREE_TOP.joinpath(dashboard).rglob('*.prj.hjson')))
+        hjson_paths.extend(sorted(SRCTREE_TOP.joinpath(dashboard).rglob("*.prj.hjson")))
 
-        dashboard_path = config["outdir-generated"].joinpath(
-            dashboard, 'dashboard')
-        dashboard_html = open(str(dashboard_path), mode='w')
+        dashboard_path = config["outdir-generated"].joinpath(dashboard, "dashboard")
+        dashboard_html = open(str(dashboard_path), mode="w")
         for hjson_path in hjson_paths:
             gen_dashboard_entry.gen_dashboard_html(hjson_path, dashboard_html)
         dashboard_html.close()
@@ -149,9 +137,9 @@ def generate_dashboards():
 def generate_hardware_blocks():
     for hardware in config["hardware_definitions"]:
         hardware_file = open(str(SRCTREE_TOP.joinpath(hardware)))
-        regs = hjson.load(hardware_file,
-                          use_decimal=True,
-                          object_pairs_hook=validate.checking_dict)
+        regs = hjson.load(
+            hardware_file, use_decimal=True, object_pairs_hook=validate.checking_dict
+        )
         if validate.validate(regs) == 0:
             logging.info("Parsed %s" % (hardware))
         else:
@@ -160,14 +148,15 @@ def generate_hardware_blocks():
         base_path = config["outdir-generated"].joinpath(hardware)
         base_path.parent.mkdir(parents=True, exist_ok=True)
 
-        regs_html = open(str(base_path.parent.joinpath(base_path.name +
-                                                       '.registers')),
-                         mode='w')
+        regs_html = open(
+            str(base_path.parent.joinpath(base_path.name + ".registers")), mode="w"
+        )
         gen_html.gen_html(regs, regs_html)
         regs_html.close()
 
-        hwcfg_html = open(str(base_path.parent.joinpath(base_path.name + '.hwcfg')),
-                          mode='w')
+        hwcfg_html = open(
+            str(base_path.parent.joinpath(base_path.name + ".hwcfg")), mode="w"
+        )
         gen_cfg_html.gen_cfg_html(regs, hwcfg_html)
         hwcfg_html.close()
 
@@ -176,10 +165,10 @@ def generate_testplans():
     for testplan in config["testplan_definitions"]:
         plan = testplan_utils.parse_testplan(SRCTREE_TOP.joinpath(testplan))
 
-        plan_path = config["outdir-generated"].joinpath(testplan + '.testplan')
+        plan_path = config["outdir-generated"].joinpath(testplan + ".testplan")
         plan_path.parent.mkdir(parents=True, exist_ok=True)
 
-        testplan_html = open(str(plan_path), mode='w')
+        testplan_html = open(str(plan_path), mode="w")
         testplan_utils.gen_html_testplan_table(plan, testplan_html)
         testplan_html.close()
 
@@ -190,13 +179,13 @@ def generate_selfdocs():
     Each tool creates selfdoc differently. Manually invoked.
     """
     for tool in config["selfdoc_tools"]:
-        selfdoc_path = config["outdir-generated"].joinpath(tool + '.selfdoc')
+        selfdoc_path = config["outdir-generated"].joinpath(tool + ".selfdoc")
         selfdoc_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(str(selfdoc_path), mode='w') as fout:
+        with open(str(selfdoc_path), mode="w") as fout:
             if tool == "reggen":
                 reggen_selfdoc.document(fout)
             elif tool == "tlgen":
-                fout.write(tlgen.selfdoc(heading=3, cmd='tlgen.py --doc'))
+                fout.write(tlgen.selfdoc(heading=3, cmd="tlgen.py --doc"))
 
 
 def generate_apt_reqs():
@@ -209,23 +198,22 @@ def generate_apt_reqs():
     requirements_file = open(str(SRCTREE_TOP.joinpath("apt-requirements.txt")))
     for package_line in requirements_file.readlines():
         # Ignore everything after `#` on each line, and strip whitespace
-        package = package_line.split('#', 1)[0].strip()
+        package = package_line.split("#", 1)[0].strip()
         if package:
             # only add non-empty lines to packages
             apt_requirements.append(package)
 
     apt_cmd = "$ sudo apt-get install " + " ".join(apt_requirements)
-    apt_cmd_lines = textwrap.wrap(apt_cmd,
-                                  width=78,
-                                  replace_whitespace=True,
-                                  subsequent_indent='    ')
+    apt_cmd_lines = textwrap.wrap(
+        apt_cmd, width=78, replace_whitespace=True, subsequent_indent="    "
+    )
     # Newlines need to be escaped
     apt_cmd = " \\\n".join(apt_cmd_lines)
 
     # And then to write the generated string directly to the file.
-    apt_cmd_path = config["outdir-generated"].joinpath('apt_cmd.txt')
+    apt_cmd_path = config["outdir-generated"].joinpath("apt_cmd.txt")
     apt_cmd_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(str(apt_cmd_path), mode='w') as fout:
+    with open(str(apt_cmd_path), mode="w") as fout:
         fout.write(apt_cmd)
 
 
@@ -241,9 +229,9 @@ def generate_tool_versions():
 
     # And then write a version file for every tool.
     for tool in __TOOL_REQUIREMENTS__:  # noqa: F821
-        version_path = config["outdir-generated"].joinpath('version_' + tool + '.txt')
+        version_path = config["outdir-generated"].joinpath("version_" + tool + ".txt")
         version_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(str(version_path), mode='w') as fout:
+        with open(str(version_path), mode="w") as fout:
             fout.write(__TOOL_REQUIREMENTS__[tool])  # noqa: F821
 
 
@@ -276,24 +264,31 @@ def generate_dif_docs():
     ]
 
     doxygen_results = subprocess.run(  # noqa: F841
-        doxygen_args, check=True,
-        cwd=str(SRCTREE_TOP), stdout=subprocess.PIPE,
+        doxygen_args,
+        check=True,
+        cwd=str(SRCTREE_TOP),
+        stdout=subprocess.PIPE,
         env=dict(
             os.environ,
             SRCTREE_TOP=str(SRCTREE_TOP),
             DOXYGEN_OUT=str(doxygen_out_path),
-        ))
+        ),
+    )
 
     logging.info("Generated Software API Documentation (Doxygen)")
 
     if doxygen_warnings_path.exists():
-        logging.warning("Doxygen Generated Warnings "
-                        "(saved in {})".format(str(doxygen_warnings_path)))
+        logging.warning(
+            "Doxygen Generated Warnings "
+            "(saved in {})".format(str(doxygen_warnings_path))
+        )
 
     combined_xml = gen_dif_listing.get_combined_xml(doxygen_xml_path)
 
     dif_paths = []
-    dif_paths.extend(sorted(SRCTREE_TOP.joinpath(config["difs-directory"]).glob("dif_*.h")))
+    dif_paths.extend(
+        sorted(SRCTREE_TOP.joinpath(config["difs-directory"]).glob("dif_*.h"))
+    )
 
     dif_listings_root_path = config["outdir-generated"].joinpath("sw/difs_listings")
     difrefs_root_path = config["outdir-generated"].joinpath("sw/difref")
@@ -304,44 +299,47 @@ def generate_dif_docs():
         dif_listings_filename = dif_listings_root_path.joinpath(dif_header + ".html")
         dif_listings_filename.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(str(dif_listings_filename), mode='w') as dif_listings_html:
-            gen_dif_listing.gen_listing_html(combined_xml, dif_header,
-                                             dif_listings_html)
+        with open(str(dif_listings_filename), mode="w") as dif_listings_html:
+            gen_dif_listing.gen_listing_html(
+                combined_xml, dif_header, dif_listings_html
+            )
 
         difref_functions = gen_dif_listing.get_difref_info(combined_xml, dif_header)
         for function in difref_functions:
-            difref_filename = difrefs_root_path.joinpath(function["name"] + '.html')
+            difref_filename = difrefs_root_path.joinpath(function["name"] + ".html")
             difref_filename.parent.mkdir(parents=True, exist_ok=True)
 
-            with open(str(difref_filename), mode='w') as difref_html:
+            with open(str(difref_filename), mode="w") as difref_html:
                 gen_dif_listing.gen_difref_html(function, difref_html)
 
         logging.info("Generated DIF Listing for {}".format(dif_header))
 
 
 def generate_otbn_isa():
-    '''Generate the OTBN ISA documentation fragment
+    """Generate the OTBN ISA documentation fragment
 
     The result is in Markdown format and is written to
     outdir-generated/otbn-isa.md
 
-    '''
-    otbn_dir = SRCTREE_TOP / 'hw/ip/otbn'
-    script = otbn_dir / 'util/yaml_to_doc.py'
-    yaml_file = otbn_dir / 'data/insns.yml'
+    """
+    otbn_dir = SRCTREE_TOP / "hw/ip/otbn"
+    script = otbn_dir / "util/yaml_to_doc.py"
+    yaml_file = otbn_dir / "data/insns.yml"
 
-    out_dir = config['outdir-generated'].joinpath('otbn-isa')
+    out_dir = config["outdir-generated"].joinpath("otbn-isa")
     subprocess.run([str(script), str(yaml_file), str(out_dir)], check=True)
 
 
 def hugo_match_version(hugo_bin_path, version):
     logging.info("Hugo binary path: %s", hugo_bin_path)
     args = [str(hugo_bin_path), "version"]
-    process = subprocess.run(args,
-                             universal_newlines=True,
-                             stdout=subprocess.PIPE,
-                             check=True,
-                             cwd=str(SRCTREE_TOP))
+    process = subprocess.run(
+        args,
+        universal_newlines=True,
+        stdout=subprocess.PIPE,
+        check=True,
+        cwd=str(SRCTREE_TOP),
+    )
 
     logging.info("Checking for correct Hugo version: %s", version)
     # Hugo version string example:
@@ -358,24 +356,27 @@ def install_hugo(install_dir):
       Currently only 64-bit x86 Linux and macOS is supported."""
 
     # TODO: Support more configurations
-    if platform.system() == 'Linux' and platform.machine() == 'x86_64':
-        download_url = ('https://github.com/gohugoio/hugo/releases/download/v{version}'
-                '/hugo_extended_{version}_Linux-64bit.tar.gz').format(
-                        version=HUGO_EXTENDED_VERSION)
+    if platform.system() == "Linux" and platform.machine() == "x86_64":
+        download_url = (
+            "https://github.com/gohugoio/hugo/releases/download/v{version}"
+            "/hugo_extended_{version}_Linux-64bit.tar.gz"
+        ).format(version=HUGO_EXTENDED_VERSION)
 
-    elif platform.system() == 'Darwin' and platform.machine() == 'x86_64':
-        download_url =  ('https://github.com/gohugoio/hugo/releases/download/v{version}'
-                '/hugo_extended_{version}_macOS-64bit.tar.gz').format(
-                        version=HUGO_EXTENDED_VERSION)
+    elif platform.system() == "Darwin" and platform.machine() == "x86_64":
+        download_url = (
+            "https://github.com/gohugoio/hugo/releases/download/v{version}"
+            "/hugo_extended_{version}_macOS-64bit.tar.gz"
+        ).format(version=HUGO_EXTENDED_VERSION)
 
     else:
         logging.fatal(
             "Auto-install of hugo only supported for 64-bit x86 Linux and "
-            "macOS. Manually install hugo and re-run this script with --force-global.")
+            "macOS. Manually install hugo and re-run this script with --force-global."
+        )
         return False
 
     install_dir.mkdir(exist_ok=True, parents=True)
-    hugo_bin_path = install_dir / 'hugo'
+    hugo_bin_path = install_dir / "hugo"
 
     try:
         if hugo_match_version(hugo_bin_path, HUGO_EXTENDED_VERSION):
@@ -388,8 +389,9 @@ def install_hugo(install_dir):
 
     # TODO: Investigate the use of Python builtins for downloading. Extracting
     # the archive will probably will be a call to tar.
-    cmd = 'curl -sL {download_url} | tar -xzO hugo > {hugo_bin_file}'.format(
-        hugo_bin_file=str(hugo_bin_path), download_url=download_url)
+    cmd = "curl -sL {download_url} | tar -xzO hugo > {hugo_bin_file}".format(
+        hugo_bin_file=str(hugo_bin_path), download_url=download_url
+    )
     logging.info("Calling %s to download hugo.", cmd)
     subprocess.run(cmd, shell=True, check=True, cwd=str(SRCTREE_TOP))
     hugo_bin_path.chmod(0o755)
@@ -397,9 +399,9 @@ def install_hugo(install_dir):
 
 
 def invoke_hugo(preview, hugo_bin_path):
-    site_docs = SRCTREE_TOP.joinpath('site', 'docs')
-    config_file = str(site_docs.joinpath('config.toml'))
-    layout_dir = str(site_docs.joinpath('layouts'))
+    site_docs = SRCTREE_TOP.joinpath("site", "docs")
+    config_file = str(site_docs.joinpath("config.toml"))
+    layout_dir = str(site_docs.joinpath("layouts"))
     args = [
         str(hugo_bin_path),
         "--config",
@@ -417,26 +419,29 @@ def invoke_hugo(preview, hugo_bin_path):
 
 
 def main():
-    logging.basicConfig(level=logging.INFO,
-                        format="%(asctime)s - %(message)s",
-                        datefmt="%Y-%m-%d %H:%M")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s - %(message)s", datefmt="%Y-%m-%d %H:%M"
+    )
 
     parser = argparse.ArgumentParser(
         prog="build_docs",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        usage=USAGE)
+        usage=USAGE,
+    )
     parser.add_argument(
-        '--preview',
-        action='store_true',
+        "--preview",
+        action="store_true",
         help="""Starts a local server with live reload (updates triggered upon
              changes in the documentation files). This feature is intended
-             to preview the documentation locally.""")
+             to preview the documentation locally.""",
+    )
     parser.add_argument(
-        '--force-global',
-        action='store_true',
+        "--force-global",
+        action="store_true",
         help="""Use a global installation of Hugo. This skips the version
-            check and relies on Hugo to be available from the environment.""")
-    parser.add_argument('--hugo', help="""TODO""")
+            check and relies on Hugo to be available from the environment.""",
+    )
+    parser.add_argument("--hugo", help="""TODO""")
 
     args = parser.parse_args()
 
@@ -449,7 +454,7 @@ def main():
     generate_dif_docs()
     generate_otbn_isa()
 
-    hugo_localinstall_dir = SRCTREE_TOP / 'build' / 'docs-hugo'
+    hugo_localinstall_dir = SRCTREE_TOP / "build" / "docs-hugo"
     os.environ["PATH"] += os.pathsep + str(hugo_localinstall_dir)
 
     hugo_bin_path = "hugo"

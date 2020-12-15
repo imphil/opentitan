@@ -209,8 +209,7 @@ def doc_tbl_head(outfile, use):
 def doc_tbl_line(outfile, key, use, desc):
     if use is not None:
         desc_key, desc_txt = desc
-        val_type = (validate.val_types[desc_key][0]
-                    if desc_key is not None else None)
+        val_type = validate.val_types[desc_key][0] if desc_key is not None else None
     else:
         assert isinstance(desc, str)
         val_type = None
@@ -218,8 +217,11 @@ def doc_tbl_line(outfile, key, use, desc):
 
     if val_type is not None:
         genout(
-            outfile, '{} | {} | {} | {}\n'.format(key, validate.key_use[use],
-                                                  val_type, desc_txt))
+            outfile,
+            "{} | {} | {} | {}\n".format(
+                key, validate.key_use[use], val_type, desc_txt
+            ),
+        )
     else:
         genout(outfile, key + " | " + desc_txt + "\n")
 
@@ -228,8 +230,8 @@ def document(outfile):
     genout(outfile, doc_intro)
     for x in validate.val_types:
         genout(
-            outfile,
-            validate.val_types[x][0] + " | " + validate.val_types[x][1] + "\n")
+            outfile, validate.val_types[x][0] + " | " + validate.val_types[x][1] + "\n"
+        )
 
     genout(outfile, swaccess_intro)
     doc_tbl_head(outfile, None)
@@ -242,56 +244,63 @@ def document(outfile):
         doc_tbl_line(outfile, x, None, validate.hwaccess_permitted[x][0])
 
     genout(
-        outfile, "\n\nThe top level of the JSON is a group containing "
-        "the following keys:\n")
+        outfile,
+        "\n\nThe top level of the JSON is a group containing " "the following keys:\n",
+    )
     doc_tbl_head(outfile, 1)
     for x in validate.top_required:
-        doc_tbl_line(outfile, x, 'r', validate.top_required[x])
+        doc_tbl_line(outfile, x, "r", validate.top_required[x])
     for x in validate.top_optional:
-        doc_tbl_line(outfile, x, 'o', validate.top_optional[x])
+        doc_tbl_line(outfile, x, "o", validate.top_optional[x])
     for x in validate.top_added:
-        doc_tbl_line(outfile, x, 'a', validate.top_added[x])
+        doc_tbl_line(outfile, x, "a", validate.top_added[x])
     genout(outfile, top_example)
 
     genout(
-        outfile, "\n\nThe list of registers includes register definition "
-        "groups containing the following keys:\n")
+        outfile,
+        "\n\nThe list of registers includes register definition "
+        "groups containing the following keys:\n",
+    )
     doc_tbl_head(outfile, 1)
     for x in validate.reg_required:
-        doc_tbl_line(outfile, x, 'r', validate.reg_required[x])
+        doc_tbl_line(outfile, x, "r", validate.reg_required[x])
     for x in validate.reg_optional:
-        doc_tbl_line(outfile, x, 'o', validate.reg_optional[x])
+        doc_tbl_line(outfile, x, "o", validate.reg_optional[x])
     for x in validate.reg_added:
-        doc_tbl_line(outfile, x, 'a', validate.reg_added[x])
+        doc_tbl_line(outfile, x, "a", validate.reg_added[x])
     genout(outfile, register_example)
 
     genout(
-        outfile, "\n\nIn the fields list each field definition is a group "
-        "itself containing the following keys:\n")
+        outfile,
+        "\n\nIn the fields list each field definition is a group "
+        "itself containing the following keys:\n",
+    )
     doc_tbl_head(outfile, 1)
     for x in validate.field_required:
-        doc_tbl_line(outfile, x, 'r', validate.field_required[x])
+        doc_tbl_line(outfile, x, "r", validate.field_required[x])
     for x in validate.field_optional:
-        doc_tbl_line(outfile, x, 'o', validate.field_optional[x])
+        doc_tbl_line(outfile, x, "o", validate.field_optional[x])
     for x in validate.field_added:
-        doc_tbl_line(outfile, x, 'a', validate.field_added[x])
+        doc_tbl_line(outfile, x, "a", validate.field_added[x])
     genout(outfile, field_example)
 
     genout(outfile, "\n\nDefinitions in an enumeration group contain:\n")
     doc_tbl_head(outfile, 1)
     for x in validate.enum_required:
-        doc_tbl_line(outfile, x, 'r', validate.enum_required[x])
+        doc_tbl_line(outfile, x, "r", validate.enum_required[x])
     for x in validate.enum_optional:
-        doc_tbl_line(outfile, x, 'o', validate.enum_optional[x])
+        doc_tbl_line(outfile, x, "o", validate.enum_optional[x])
     for x in validate.enum_added:
-        doc_tbl_line(outfile, x, 'a', validate.enum_added[x])
+        doc_tbl_line(outfile, x, "a", validate.enum_added[x])
 
     genout(
-        outfile, "\n\nThe list of registers may include single entry groups "
-        "to control the offset, open a window or generate registers:\n")
+        outfile,
+        "\n\nThe list of registers may include single entry groups "
+        "to control the offset, open a window or generate registers:\n",
+    )
     doc_tbl_head(outfile, 1)
     for x in validate.list_optone:
-        doc_tbl_line(outfile, x, 'o', validate.list_optone[x])
+        doc_tbl_line(outfile, x, "o", validate.list_optone[x])
 
     genout(outfile, offset_intro)
     genout(outfile, regwen_intro)
@@ -299,19 +308,19 @@ def document(outfile):
     genout(outfile, window_intro)
     doc_tbl_head(outfile, 1)
     for x in validate.window_required:
-        doc_tbl_line(outfile, x, 'r', validate.window_required[x])
+        doc_tbl_line(outfile, x, "r", validate.window_required[x])
     for x in validate.window_optional:
-        doc_tbl_line(outfile, x, 'o', validate.window_optional[x])
+        doc_tbl_line(outfile, x, "o", validate.window_optional[x])
     for x in validate.window_added:
-        doc_tbl_line(outfile, x, 'a', validate.window_added[x])
+        doc_tbl_line(outfile, x, "a", validate.window_added[x])
 
     genout(outfile, multi_intro)
     doc_tbl_head(outfile, 1)
     for x in validate.multireg_required:
-        doc_tbl_line(outfile, x, 'r', validate.multireg_required[x])
+        doc_tbl_line(outfile, x, "r", validate.multireg_required[x])
     for x in validate.multireg_optional:
-        doc_tbl_line(outfile, x, 'o', validate.multireg_optional[x])
+        doc_tbl_line(outfile, x, "o", validate.multireg_optional[x])
     for x in validate.multireg_added:
-        doc_tbl_line(outfile, x, 'a', validate.multireg_added[x])
+        doc_tbl_line(outfile, x, "a", validate.multireg_added[x])
 
     genout(outfile, doc_tail)

@@ -13,19 +13,20 @@ def _get_basename(name):
     for (k, c) in enumerate(name[::-1]):
         if not str.isdigit(c):
             if c == "_":
-                return name[0:len(name) - (k + 1)]
+                return name[0 : len(name) - (k + 1)]
             else:
                 break
     return ""
 
 
-class Field():
+class Field:
     """Field in a register.
 
     Field class contains necessary info to generate RTL code.
     It has two additional (tool generated) fields, swrdaccess and swwraccess,
     which represent read and write type. This makes RTL generation code simpler.
     """
+
     def __init__(self):
         self.name = ""  # required
         self.msb = 31  # required
@@ -62,7 +63,7 @@ class Field():
         return _get_basename(self.name)
 
 
-class Reg():
+class Reg:
     def __init__(self, name=""):
         self.name = name
         self.offset = 0
@@ -138,8 +139,7 @@ class Reg():
         # or if this is the last multiregister level in a nested multiregister
         if not isinstance(self, MultiReg):
             dims = [len(self.get_fields_flat())]
-        if isinstance(self, MultiReg) and\
-           not isinstance(self.fields[0], MultiReg):
+        if isinstance(self, MultiReg) and not isinstance(self.fields[0], MultiReg):
             if self.ishomog:
                 dims = [len(self.get_fields_flat())]
             else:
@@ -172,7 +172,7 @@ class MultiReg(Reg):
         return True
 
 
-class Window():
+class Window:
     def __init__(self):
         self.base_addr = 0
         self.byte_write = 0
@@ -181,7 +181,7 @@ class Window():
         self.tags = []
 
 
-class Block():
+class Block:
     def __init__(self):
         self.width = 32
         self.addr_width = 12
@@ -196,8 +196,7 @@ class Block():
         self.tags = []
 
     def get_regs_flat(self):
-        """Returns flattened register list
-        """
+        """Returns flattened register list"""
         regs = []
         for r in self.regs:
             regs += r.get_regs_flat()
@@ -218,8 +217,7 @@ class Block():
         return len(self.get_regs_flat())
 
     def contains_multiregs(self):
-        """Returns true if there are multiregs in this block
-        """
+        """Returns true if there are multiregs in this block"""
         for r in self.regs:
             if isinstance(r, MultiReg):
                 return True

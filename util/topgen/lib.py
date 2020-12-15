@@ -31,7 +31,7 @@ def is_ipcfg(ip: Path) -> bool:  # return bool
 
 def search_ips(ip_path):  # return list of config files
     # list the every Hjson file
-    p = ip_path.glob('*/data/*.hjson')
+    p = ip_path.glob("*/data/*.hjson")
 
     # filter only ip_name/data/ip_name{_reg|''}.hjson
     ips = [x for x in p if is_ipcfg(x)]
@@ -48,18 +48,17 @@ def is_xbarcfg(xbar_obj):
 
 
 def get_hjsonobj_xbars(xbar_path):
-    """ Search crossbars Hjson files from given path.
+    """Search crossbars Hjson files from given path.
 
     Search every Hjson in the directory and check Hjson type.
     It could be type: "top" or type: "xbar"
     returns [(name, obj), ... ]
     """
-    p = xbar_path.glob('*.hjson')
+    p = xbar_path.glob("*.hjson")
     try:
         xbar_objs = [
-            hjson.load(x.open('r'),
-                       use_decimal=True,
-                       object_pairs_hook=OrderedDict) for x in p
+            hjson.load(x.open("r"), use_decimal=True, object_pairs_hook=OrderedDict)
+            for x in p
         ]
     except ValueError:
         raise SystemExit(sys.exc_info()[1])
@@ -70,8 +69,7 @@ def get_hjsonobj_xbars(xbar_path):
 
 
 def get_module_by_name(top, name):
-    """Search in top["module"] by name
-    """
+    """Search in top["module"] by name"""
     module = None
     for m in top["module"]:
         if m["name"] == name:
@@ -107,11 +105,13 @@ def get_package_name_by_intermodule_signal(top, struct) -> str:
 
 
 def get_signal_by_name(module, name):
-    """Return the signal struct with the type input/output/inout
-    """
+    """Return the signal struct with the type input/output/inout"""
     result = None
-    for s in module["available_input_list"] + module[
-            "available_output_list"] + module["available_inout_list"]:
+    for s in (
+        module["available_input_list"]
+        + module["available_output_list"]
+        + module["available_inout_list"]
+    ):
         if s["name"] == name:
             result = s
             break
@@ -120,8 +120,7 @@ def get_signal_by_name(module, name):
 
 
 def add_module_prefix_to_signal(signal, module):
-    """Add module prefix to module signal format { name: "sig_name", width: NN }
-    """
+    """Add module prefix to module signal format { name: "sig_name", width: NN }"""
     result = deepcopy(signal)
 
     if "name" not in signal:
@@ -134,10 +133,9 @@ def add_module_prefix_to_signal(signal, module):
 
 
 def get_ms_name(name):
-    """Split module_name.signal_name to module_name , signal_name
-    """
+    """Split module_name.signal_name to module_name , signal_name"""
 
-    tokens = name.split('.')
+    tokens = name.split(".")
 
     if len(tokens) == 0:
         raise SystemExit("This to be catched in validate.py")
@@ -151,9 +149,8 @@ def get_ms_name(name):
 
 
 def parse_pad_field(padstr):
-    """Parse PadName[NN...NN] or PadName[NN] or just PadName
-    """
-    match = re.match(r'^([A-Za-z0-9_]+)(\[([0-9]+)(\.\.([0-9]+))?\]|)', padstr)
+    """Parse PadName[NN...NN] or PadName[NN] or just PadName"""
+    match = re.match(r"^([A-Za-z0-9_]+)(\[([0-9]+)(\.\.([0-9]+))?\]|)", padstr)
     return match.group(1), match.group(3), match.group(5)
 
 
@@ -208,46 +205,42 @@ def bitarray(d, width):
 
 
 def parameterize(text):
-    """Return the value wrapping with quote if not integer nor bits
-    """
-    if re.match(r'(\d+\'[hdb]\s*[0-9a-f_A-F]+|[0-9]+)', text) is None:
-        return "\"{}\"".format(text)
+    """Return the value wrapping with quote if not integer nor bits"""
+    if re.match(r"(\d+\'[hdb]\s*[0-9a-f_A-F]+|[0-9]+)", text) is None:
+        return '"{}"'.format(text)
 
     return text
 
 
 def index(i: int) -> str:
-    """Return index if it is not -1
-    """
+    """Return index if it is not -1"""
     return "[{}]".format(i) if i != -1 else ""
 
 
 def get_clk_name(clk):
-    """Return the appropriate clk name
-    """
-    if clk == 'main':
-        return 'clk_i'
+    """Return the appropriate clk name"""
+    if clk == "main":
+        return "clk_i"
     else:
         return "clk_{}_i".format(clk)
 
 
 def get_reset_path(reset, domain, reset_cfg):
-    """Return the appropriate reset path given name
-    """
+    """Return the appropriate reset path given name"""
     # find matching node for reset
-    node_match = [node for node in reset_cfg['nodes'] if node['name'] == reset]
+    node_match = [node for node in reset_cfg["nodes"] if node["name"] == reset]
     assert len(node_match) == 1
-    reset_type = node_match[0]['type']
+    reset_type = node_match[0]["type"]
 
     # find matching path
     hier_path = ""
     if reset_type == "int":
         log.debug("{} used as internal reset".format(reset["name"]))
     else:
-        hier_path = reset_cfg['hier_paths'][reset_type]
+        hier_path = reset_cfg["hier_paths"][reset_type]
 
     # find domain selection
-    domain_sel = ''
+    domain_sel = ""
     if reset_type not in ["ext", "int"]:
         domain_sel = "[rstmgr_pkg::Domain{}Sel]".format(domain)
 
@@ -261,14 +254,13 @@ def get_reset_path(reset, domain, reset_cfg):
 
 
 def get_unused_resets(top):
-    """Return dict of unused resets and associated domain
-    """
+    """Return dict of unused resets and associated domain"""
     unused_resets = OrderedDict()
     unused_resets = {
-        reset['name']: domain
-        for reset in top['resets']['nodes']
-        for domain in top['power']['domains']
-        if reset['type'] == 'top' and domain not in reset['domains']
+        reset["name"]: domain
+        for reset in top["resets"]["nodes"]
+        for domain in top["power"]["domains"]
+        if reset["type"] == "top" and domain not in reset["domains"]
     }
 
     log.debug("Unused resets are {}".format(unused_resets))

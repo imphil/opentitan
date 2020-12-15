@@ -20,8 +20,7 @@ class OneShotCfg(FlowCfg):
     linting, synthesis and FPV.
     """
 
-    ignored_wildcards = (FlowCfg.ignored_wildcards +
-                         ['build_mode', 'index', 'test'])
+    ignored_wildcards = FlowCfg.ignored_wildcards + ["build_mode", "index", "test"]
 
     def __init__(self, flow_cfg_file, hjson_data, args, mk_config):
         # Options set from command line
@@ -97,7 +96,7 @@ class OneShotCfg(FlowCfg):
                 "D": self.scratch_path + "/" + "dispatched",
                 "P": self.scratch_path + "/" + "passed",
                 "F": self.scratch_path + "/" + "failed",
-                "K": self.scratch_path + "/" + "killed"
+                "K": self.scratch_path + "/" + "killed",
             }
 
             # Use the default build mode for tests that do not specify it
@@ -115,13 +114,11 @@ class OneShotCfg(FlowCfg):
                 log.info("Purging scratch path %s", self.scratch_path)
                 os.system("/bin/rm -rf " + self.scratch_path)
             except IOError:
-                log.error('Failed to purge scratch directory %s',
-                          self.scratch_path)
+                log.error("Failed to purge scratch directory %s", self.scratch_path)
 
     def _create_objects(self):
         # Create build and run modes objects
-        build_modes = Modes.create_modes(BuildModes,
-                                         getattr(self, "build_modes"))
+        build_modes = Modes.create_modes(BuildModes, getattr(self, "build_modes"))
         setattr(self, "build_modes", build_modes)
 
         # All defined build modes are being built, h
@@ -140,8 +137,7 @@ class OneShotCfg(FlowCfg):
                 log.error("Item %s does not exist!", list_item)
 
     def _create_dirs(self):
-        '''Create initial set of directories
-        '''
+        """Create initial set of directories"""
         # Invoking system calls has a performance penalty.
         # Construct a single command line chained with '&&' to invoke
         # the system call only once, rather than multiple times.
@@ -154,13 +150,11 @@ class OneShotCfg(FlowCfg):
         try:
             os.system(create_link_dirs_cmd)
         except IOError:
-            log.error("Error running when running the cmd \"%s\"",
-                      create_link_dirs_cmd)
+            log.error('Error running when running the cmd "%s"', create_link_dirs_cmd)
             sys.exit(1)
 
     def _create_deploy_objects(self):
-        '''Create deploy objects from build modes
-        '''
+        """Create deploy objects from build modes"""
         builds = []
         build_map = {}
         for build in self.build_modes:

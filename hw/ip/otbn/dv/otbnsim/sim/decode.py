@@ -2,7 +2,7 @@
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 
-'''Code to load instruction words into a simulator'''
+"""Code to load instruction words into a simulator"""
 
 import struct
 from typing import List, Optional, Tuple, Type
@@ -18,7 +18,7 @@ _MaskTuple = Tuple[int, int, Type[OTBNInsn]]
 
 
 class IllegalInsn(OTBNInsn):
-    '''A catch-all subclass of Instruction for bad data
+    """A catch-all subclass of Instruction for bad data
 
     This handles anything that doesn't decode correctly. Doing so for OTBN is
     much easier than if we wanted to support compressed-mode (RV32IC), because
@@ -28,24 +28,28 @@ class IllegalInsn(OTBNInsn):
     the bottom two bits are 0, which would imply a compressed instruction, so
     we know this doesn't match any real instruction.
 
-    '''
+    """
+
     def __init__(self, word: int) -> None:
         self.word = word
 
     def execute(self, state: OTBNState) -> None:
-        raise RuntimeError('Illegal instruction at {:#x}: encoding {:#010x}.'
-                           .format(int(state.pc), self.word))
+        raise RuntimeError(
+            "Illegal instruction at {:#x}: encoding {:#010x}.".format(
+                int(state.pc), self.word
+            )
+        )
 
 
 MASK_TUPLES = None  # type: Optional[List[_MaskTuple]]
 
 
 def get_insn_masks() -> List[_MaskTuple]:
-    '''Generate a list of zeros/ones masks for known instructions
+    """Generate a list of zeros/ones masks for known instructions
 
     The result is memoized.
 
-    '''
+    """
     global MASK_TUPLES
     if MASK_TUPLES is None:
         tuples = []
@@ -73,7 +77,7 @@ def _decode_word(word_off: int, word: int) -> OTBNInsn:
     for m0, m1, cls in get_insn_masks():
         # If any bit is set that should be zero or if any bit is clear that
         # should be one, ignore this instruction.
-        if word & m0 or (~ word) & m1:
+        if word & m0 or (~word) & m1:
             continue
 
         found_cls = cls
@@ -95,12 +99,14 @@ def _decode_word(word_off: int, word: int) -> OTBNInsn:
 
 
 def decode_bytes(data: bytes) -> List[OTBNInsn]:
-    '''Decode instruction bytes as instructions'''
+    """Decode instruction bytes as instructions"""
     assert len(data) & 3 == 0
-    return [_decode_word(offset, int_val[0])
-            for offset, int_val in enumerate(struct.iter_unpack('<I', data))]
+    return [
+        _decode_word(offset, int_val[0])
+        for offset, int_val in enumerate(struct.iter_unpack("<I", data))
+    ]
 
 
 def decode_file(path: str) -> List[OTBNInsn]:
-    with open(path, 'rb') as handle:
+    with open(path, "rb") as handle:
         return decode_bytes(handle.read())

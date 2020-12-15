@@ -15,7 +15,7 @@ from .field_enums import HwAccess, SwRdAccess, SwWrAccess
 
 
 def escape_name(name):
-    return name.lower().replace(' ', '_')
+    return name.lower().replace(" ", "_")
 
 
 def check_field_bool(obj, field, default):
@@ -26,8 +26,7 @@ def check_field_bool(obj, field, default):
 
 
 def parse_field(obj, reg, nfields):
-    """Convert OrderedDict field into Field class
-    """
+    """Convert OrderedDict field into Field class"""
     f = Field()
     f.name = escape_name(obj["name"])
     # if name doesn't exist and only one field in a reg
@@ -59,9 +58,9 @@ def parse_reg(obj):
     """Convert OrderedDict register into Register or MultiRegister object.
     Supports nested MultiRegisters.
     """
-    if 'multireg' in obj:
+    if "multireg" in obj:
         regs = []
-        for genr in obj['multireg']['genregs']:
+        for genr in obj["multireg"]["genregs"]:
             regs += [parse_reg(genr)]
         # get register properties of the first register in the multireg and
         # copy them to the parent
@@ -71,26 +70,26 @@ def parse_reg(obj):
         # contain regs or multiregs
         reg.fields = regs
         # a homogenous multireg contains only one single field that is replicated
-        reg.ishomog = len(obj['multireg']['fields']) == 1
+        reg.ishomog = len(obj["multireg"]["fields"]) == 1
         # TODO: need to rework this once the underlying JSON has been changed
-        reg.name = escape_name(obj['multireg']['name'])
+        reg.name = escape_name(obj["multireg"]["name"])
         # TODO: need to reference proper param here such that it can be used
         # in the package template for the array declaration
         # reg.param = ...
     else:
-        reg = Reg(escape_name(obj['name']))
+        reg = Reg(escape_name(obj["name"]))
         reg.offset = obj["genoffset"]
         reg.fields = []
 
-        reg.hwext = (obj['hwext'] == "true")
-        reg.hwqe = (obj["hwqe"] == "true")
-        reg.hwre = (obj["hwre"] == "true")
+        reg.hwext = obj["hwext"] == "true"
+        reg.hwqe = obj["hwqe"] == "true"
+        reg.hwre = obj["hwre"] == "true"
         reg.resval = obj["genresval"]
         reg.dvrights = obj["gendvrights"]
         reg.regwen = obj["regwen"].lower()
-        reg.ishomog = len(obj['fields']) == 1
-        reg.tags = (obj['tags'])
-        reg.shadowed = (obj["shadowed"] == "true")
+        reg.ishomog = len(obj["fields"]) == 1
+        reg.tags = obj["tags"]
+        reg.shadowed = obj["shadowed"] == "true"
 
         # Parsing Fields
         for f in obj["fields"]:
@@ -152,15 +151,15 @@ def json_to_reg(obj):
 
     for r in obj["registers"]:
         # Check if any exception condition hit
-        if 'reserved' in r:
+        if "reserved" in r:
             continue
-        elif 'skipto' in r:
+        elif "skipto" in r:
             continue
-        elif 'sameaddr' in r:
+        elif "sameaddr" in r:
             log.error("Current tool doesn't support 'sameaddr' type")
             continue
-        elif 'window' in r:
-            win = parse_win(r['window'], block.width)
+        elif "window" in r:
+            win = parse_win(r["window"], block.width)
             if win is not None:
                 block.wins.append(win)
             continue
@@ -183,31 +182,33 @@ def gen_rtl(obj, outdir):
     block = json_to_reg(obj)
 
     # Read Register templates
-    reg_top_tpl = Template(
-        filename=resource_filename('reggen', 'reg_top.sv.tpl'))
-    reg_pkg_tpl = Template(
-        filename=resource_filename('reggen', 'reg_pkg.sv.tpl'))
+    reg_top_tpl = Template(filename=resource_filename("reggen", "reg_top.sv.tpl"))
+    reg_pkg_tpl = Template(filename=resource_filename("reggen", "reg_pkg.sv.tpl"))
 
     # Generate pkg.sv with block name
-    with open(outdir + "/" + block.name + "_reg_pkg.sv", 'w',
-              encoding='UTF-8') as fout:
+    with open(outdir + "/" + block.name + "_reg_pkg.sv", "w", encoding="UTF-8") as fout:
         try:
             fout.write(
-                reg_pkg_tpl.render(block=block,
-                                   HwAccess=HwAccess,
-                                   SwRdAccess=SwRdAccess,
-                                   SwWrAccess=SwWrAccess))
+                reg_pkg_tpl.render(
+                    block=block,
+                    HwAccess=HwAccess,
+                    SwRdAccess=SwRdAccess,
+                    SwWrAccess=SwWrAccess,
+                )
+            )
         except:  # noqa: F722 for template Exception handling
             log.error(exceptions.text_error_template().render())
 
     # Generate top.sv
-    with open(outdir + "/" + block.name + "_reg_top.sv", 'w',
-              encoding='UTF-8') as fout:
+    with open(outdir + "/" + block.name + "_reg_top.sv", "w", encoding="UTF-8") as fout:
         try:
             fout.write(
-                reg_top_tpl.render(block=block,
-                                   HwAccess=HwAccess,
-                                   SwRdAccess=SwRdAccess,
-                                   SwWrAccess=SwWrAccess))
+                reg_top_tpl.render(
+                    block=block,
+                    HwAccess=HwAccess,
+                    SwRdAccess=SwRdAccess,
+                    SwWrAccess=SwWrAccess,
+                )
+            )
         except:  # noqa: F722 for template Exception handling
             log.error(exceptions.text_error_template().render())

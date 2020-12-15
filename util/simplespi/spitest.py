@@ -19,14 +19,19 @@ from pyftdi.spi import SpiController
 def show_and_exit(clitool, packages):
     util_path = os.path.dirname(os.path.realpath(clitool))
     os.chdir(util_path)
-    ver = subprocess.run(
-        ["git", "describe", "--always", "--dirty", "--broken"],
-        stdout=subprocess.PIPE).stdout.strip().decode('ascii')
-    if (ver == ''):
-        ver = 'not found (not in Git repository?)'
-    sys.stderr.write(clitool + " Git version " + ver + '\n')
+    ver = (
+        subprocess.run(
+            ["git", "describe", "--always", "--dirty", "--broken"],
+            stdout=subprocess.PIPE,
+        )
+        .stdout.strip()
+        .decode("ascii")
+    )
+    if ver == "":
+        ver = "not found (not in Git repository?)"
+    sys.stderr.write(clitool + " Git version " + ver + "\n")
     for p in packages:
-        sys.stderr.write(p + ' ' + pkg_resources.require(p)[0].version + '\n')
+        sys.stderr.write(p + " " + pkg_resources.require(p)[0].version + "\n")
     exit(0)
 
 
@@ -41,42 +46,44 @@ def main():
         prog="spitest",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         usage=USAGE,
-        description=__doc__)
+        description=__doc__,
+    )
+    parser.add_argument("--version", action="store_true", help="Show version and exit")
     parser.add_argument(
-        '--version', action='store_true', help='Show version and exit')
+        "-v", "--verbose", action="store_true", help="Verbose output during processing"
+    )
     parser.add_argument(
-        '-v',
-        '--verbose',
-        action='store_true',
-        help='Verbose output during processing')
+        "-f",
+        "--flippy",
+        action="store_true",
+        help="Flip the SPI/JTAG control GPIO 10 times and exit",
+    )
     parser.add_argument(
-        '-f',
-        '--flippy',
-        action='store_true',
-        help='Flip the SPI/JTAG control GPIO 10 times and exit')
-    parser.add_argument(
-        '-l',
-        '--length',
+        "-l",
+        "--length",
         type=int,
-        action='store',
-        help='Construct and send a message of specified length')
+        action="store",
+        help="Construct and send a message of specified length",
+    )
     parser.add_argument(
-        '-j',
-        '--jtag',
-        action='store_true',
-        help='Set SPI/JTAG control to JTAG and exit')
+        "-j",
+        "--jtag",
+        action="store_true",
+        help="Set SPI/JTAG control to JTAG and exit",
+    )
     parser.add_argument(
-        'message',
-        nargs='*',
-        metavar='input',
-        default='1234',
-        help='message to send in 4 byte chunks')
+        "message",
+        nargs="*",
+        metavar="input",
+        default="1234",
+        help="message to send in 4 byte chunks",
+    )
     args = parser.parse_args()
 
     if args.version:
         show_and_exit(__file__, ["pyftdi"])
 
-    if (args.verbose):
+    if args.verbose:
         log.basicConfig(format="%(levelname)s: %(message)s", level=log.DEBUG)
     else:
         log.basicConfig(format="%(levelname)s: %(message)s")
@@ -85,10 +92,10 @@ def main():
     spi = SpiController(cs_count=1)
 
     # interfaces start from 1 here, so this is Channel A (called 0 in jtag)
-    spi.configure('ftdi://ftdi:2232h/1')
+    spi.configure("ftdi://ftdi:2232h/1")
 
     # Get a port to a SPI device w/ /CS on A*BUS3 and SPI mode 0 @ 1MHz
-    device = spi.get_port(cs=0, freq=1E6, mode=0)
+    device = spi.get_port(cs=0, freq=1e6, mode=0)
 
     # Get GPIO port to manage extra pins
     # BUS4 = JTAG TRST_N, BUS5 = JTAG SRST_N, BUS6 = JTAG_SPIN
@@ -122,25 +129,25 @@ def main():
     gpio.write(0x30)
     # Synchronous exchange with the remote SPI device
     if args.length:
-        s = ''
+        s = ""
         for i in range(args.length):
             s += hex(i & 15)[-1]
     else:
-        s = ''
+        s = ""
         for m in args.message:
-            s += m + ' '
+            s += m + " "
             s = s[:-1]  # remove extra space put on end
         # pad to ensure multiple of 4 bytes
         filled = len(s) % 4
         if filled:
-            s += '....' [filled:]
+            s += "...."[filled:]
 
     while len(s):
-        write_buf = bytes(s[:4], encoding='utf8')
+        write_buf = bytes(s[:4], encoding="utf8")
         read_buf = device.exchange(write_buf, duplex=True).tobytes()
         print("Got " + str(read_buf))
         s = s[4:]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -16,10 +16,9 @@ from utils import VERBOSE, print_msg_list, subst_wildcards
 
 
 class LintCfg(OneShotCfg):
-    """Derivative class for linting purposes.
-    """
+    """Derivative class for linting purposes."""
 
-    flow = 'lint'
+    flow = "lint"
 
     def __init__(self, flow_cfg_file, hjson_data, args, mk_config):
         # This is a lint-specific attribute
@@ -39,9 +38,9 @@ class LintCfg(OneShotCfg):
             self.results_title = self.name.upper() + " Lint Results"
 
     def gen_results_summary(self):
-        '''
+        """
         Gathers the aggregated results from all sub configs
-        '''
+        """
 
         # Generate results table for runs.
         log.info("Create summary of lint results")
@@ -54,31 +53,40 @@ class LintCfg(OneShotCfg):
         results_str += "\n"
 
         header = [
-            "Name", "Tool Warnings", "Tool Errors", "Lint Warnings",
-            "Lint Errors"
+            "Name",
+            "Tool Warnings",
+            "Tool Errors",
+            "Lint Warnings",
+            "Lint Errors",
         ]
-        colalign = ("center", ) * len(header)
+        colalign = ("center",) * len(header)
         table = [header]
 
         for cfg in self.cfgs:
 
-            results_page = cfg.results_server_dir + '/results.html'
+            results_page = cfg.results_server_dir + "/results.html"
             results_page_url = results_page.replace(
-                cfg.results_server_prefix, cfg.results_server_url_prefix)
-            name_with_link = "[" + cfg.name.upper(
-            ) + "](" + results_page_url + ")"
-            table.append([
-                name_with_link,
-                str(len(cfg.result_summary["warnings"])) + " W",
-                str(len(cfg.result_summary["errors"])) + " E",
-                str(len(cfg.result_summary["lint_warnings"])) + " W",
-                str(len(cfg.result_summary["lint_errors"])) + " E"
-            ])
+                cfg.results_server_prefix, cfg.results_server_url_prefix
+            )
+            name_with_link = "[" + cfg.name.upper() + "](" + results_page_url + ")"
+            table.append(
+                [
+                    name_with_link,
+                    str(len(cfg.result_summary["warnings"])) + " W",
+                    str(len(cfg.result_summary["errors"])) + " E",
+                    str(len(cfg.result_summary["lint_warnings"])) + " W",
+                    str(len(cfg.result_summary["lint_errors"])) + " E",
+                ]
+            )
 
         if len(table) > 1:
-            self.results_summary_md = results_str + tabulate(
-                table, headers="firstrow", tablefmt="pipe",
-                colalign=colalign) + "\n"
+            self.results_summary_md = (
+                results_str
+                + tabulate(
+                    table, headers="firstrow", tablefmt="pipe", colalign=colalign
+                )
+                + "\n"
+            )
         else:
             self.results_summary_md = results_str + "\nNo results to display.\n"
 
@@ -120,10 +128,13 @@ class LintCfg(OneShotCfg):
         results_str += "### Lint Tool: " + self.tool.upper() + "\n\n"
 
         header = [
-            "Build Mode", "Tool Warnings", "Tool Errors", "Lint Warnings",
-            "Lint Errors"
+            "Build Mode",
+            "Tool Warnings",
+            "Tool Errors",
+            "Lint Warnings",
+            "Lint Errors",
         ]
-        colalign = ("center", ) * len(header)
+        colalign = ("center",) * len(header)
         table = [header]
 
         # aggregated counts
@@ -136,8 +147,9 @@ class LintCfg(OneShotCfg):
         for mode in self.build_modes:
 
             result_data = Path(
-                subst_wildcards(self.build_dir, {"build_mode": mode.name}) +
-                '/results.hjson')
+                subst_wildcards(self.build_dir, {"build_mode": mode.name})
+                + "/results.hjson"
+            )
             log.info("[results:hjson]: [%s]: [%s]", self.name, result_data)
 
             try:
@@ -151,18 +163,20 @@ class LintCfg(OneShotCfg):
                     "warnings": [],
                     "lint_errors": [],
                     "lint_warnings": [],
-                    "lint_infos": []
+                    "lint_infos": [],
                 }
             if self.result:
-                table.append([
-                    mode.name,
-                    str(len(self.result["warnings"])) + " W ",
-                    str(len(self.result["errors"])) + " E",
-                    # We currently do not publish these infos at
-                    # the moment len(self.result["lint_infos"]),
-                    str(len(self.result["lint_warnings"])) + " W",
-                    str(len(self.result["lint_errors"])) + " E"
-                ])
+                table.append(
+                    [
+                        mode.name,
+                        str(len(self.result["warnings"])) + " W ",
+                        str(len(self.result["errors"])) + " E",
+                        # We currently do not publish these infos at
+                        # the moment len(self.result["lint_infos"]),
+                        str(len(self.result["lint_warnings"])) + " W",
+                        str(len(self.result["lint_errors"])) + " E",
+                    ]
+                )
             else:
                 self.result = {
                     "tool": "",
@@ -170,20 +184,21 @@ class LintCfg(OneShotCfg):
                     "warnings": [],
                     "lint_errors": [],
                     "lint_warnings": [],
-                    "lint_infos": []
+                    "lint_infos": [],
                 }
 
             self.result_summary["warnings"] += self.result["warnings"]
             self.result_summary["errors"] += self.result["errors"]
-            self.result_summary["lint_warnings"] += self.result[
-                "lint_warnings"]
+            self.result_summary["lint_warnings"] += self.result["lint_warnings"]
             self.result_summary["lint_errors"] += self.result["lint_errors"]
 
             # Append detailed messages if they exist
-            hdr_key_pairs = [("Tool Warnings", "warnings"),
-                             ("Tool Errors", "errors"),
-                             ("Lint Warnings", "lint_warnings"),
-                             ("Lint Errors", "lint_errors")]
+            hdr_key_pairs = [
+                ("Tool Warnings", "warnings"),
+                ("Tool Errors", "errors"),
+                ("Lint Warnings", "lint_warnings"),
+                ("Lint Errors", "lint_errors"),
+            ]
 
             # Lint fails if any warning or error message has occurred
             self.errors_seen = False
@@ -194,15 +209,21 @@ class LintCfg(OneShotCfg):
                         break
 
             if self.errors_seen:
-                fail_msgs += "\n### Errors and Warnings for Build Mode `'" + mode.name + "'`\n"
+                fail_msgs += (
+                    "\n### Errors and Warnings for Build Mode `'" + mode.name + "'`\n"
+                )
                 for hdr, key in hdr_key_pairs:
                     msgs = self.result.get(key)
                     fail_msgs += print_msg_list("#### " + hdr, msgs, self.max_msg_count)
 
         if len(table) > 1:
-            self.results_md = results_str + tabulate(
-                table, headers="firstrow", tablefmt="pipe",
-                colalign=colalign) + "\n"
+            self.results_md = (
+                results_str
+                + tabulate(
+                    table, headers="firstrow", tablefmt="pipe", colalign=colalign
+                )
+                + "\n"
+            )
 
             # the email and published reports will default to self.results_md if they are
             # empty. in case they need to be sanitized, override them and do not append
@@ -220,7 +241,7 @@ class LintCfg(OneShotCfg):
 
         # Write results to the scratch area
         results_file = self.scratch_path + "/results_" + self.timestamp + ".md"
-        with open(results_file, 'w') as f:
+        with open(results_file, "w") as f:
             f.write(self.results_md)
 
         log.log(VERBOSE, "[results page]: [%s] [%s]", self.name, results_file)

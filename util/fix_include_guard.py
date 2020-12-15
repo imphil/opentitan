@@ -32,50 +32,48 @@ REPO_TOP = Path(__file__).resolve().parent.parent
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--dry-run',
-        action='store_true',
-        help='report writes which would have happened')
+        "--dry-run", action="store_true", help="report writes which would have happened"
+    )
     parser.add_argument(
-        'headers',
-        type=str,
-        nargs='+',
-        help='headers to fix guards for')
+        "headers", type=str, nargs="+", help="headers to fix guards for"
+    )
     args = parser.parse_args()
 
     total_fixes = 0
     for header_path in args.headers:
         header = Path(header_path).resolve().relative_to(REPO_TOP)
-        if header.suffix != '.h' or 'vendor' in header.parts:
+        if header.suffix != ".h" or "vendor" in header.parts:
             continue
 
-        uppercase_dir = re.sub(r'[^\w]', '_', str(header.parent)).upper()
-        uppercase_stem = re.sub(r'[^\w]', '_', str(header.stem)).upper()
-        guard = '%s_%s_%s_H_' % (PROJECT_NAME, uppercase_dir, uppercase_stem)
+        uppercase_dir = re.sub(r"[^\w]", "_", str(header.parent)).upper()
+        uppercase_stem = re.sub(r"[^\w]", "_", str(header.stem)).upper()
+        guard = "%s_%s_%s_H_" % (PROJECT_NAME, uppercase_dir, uppercase_stem)
 
         header_text = header.read_text()
         header_original = header_text
 
         # Find the old guard name, which will be the first #ifndef in the file.
-        old_guard = re.search(r'#ifndef +(\w+)', header_text).group(1)
+        old_guard = re.search(r"#ifndef +(\w+)", header_text).group(1)
 
         # Fix the guards at the top, which are guaranteed to be there.
-        header_text = re.sub('#(ifndef|define) +%s' % (old_guard, ),
-                             r'#\1 %s' % (guard, ), header_text)
+        header_text = re.sub(
+            "#(ifndef|define) +%s" % (old_guard,), r"#\1 %s" % (guard,), header_text
+        )
 
         # Fix up the endif. Since this is the last thing in the file, and it
         # might be missing the comment, we just truncate the file, and add on
         # the required guard end.
-        header_text = header_text[:header_text.rindex('#endif')]
-        header_text += "#endif  // %s\n" % (guard, )
+        header_text = header_text[: header_text.rindex("#endif")]
+        header_text += "#endif  // %s\n" % (guard,)
 
         if header_text != header_original:
-            print('Fixing header: "%s"' % (header, ), file=sys.stdout)
+            print('Fixing header: "%s"' % (header,), file=sys.stdout)
             total_fixes += 1
             if not args.dry_run:
                 header.write_text(header_text)
 
-    print('Fixed %d files.' % (total_fixes, ), file=sys.stderr)
+    print("Fixed %d files." % (total_fixes,), file=sys.stderr)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

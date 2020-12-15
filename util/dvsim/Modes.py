@@ -9,23 +9,23 @@ import sys
 from utils import VERBOSE
 
 
-class Modes():
+class Modes:
     """
     Abstraction for specifying collection of options called as 'modes'. This is
     the base class which is extended for run_modes, build_modes, tests and regressions.
     """
+
     def self_str(self):
-        '''
+        """
         This is used to construct the string representation of the entire class object.
-        '''
+        """
         tname = ""
         if self.type != "":
             tname = self.type + "_"
         if self.mname != "":
             tname += self.mname
         if log.getLogger().isEnabledFor(VERBOSE):
-            return "\n<---" + tname + ":\n" + pprint.pformat(self.__dict__) + \
-                   "\n--->\n"
+            return "\n<---" + tname + ":\n" + pprint.pformat(self.__dict__) + "\n--->\n"
         else:
             return tname + ":" + self.name
 
@@ -39,12 +39,12 @@ class Modes():
         keys = mdict.keys()
         attrs = self.__dict__.keys()
 
-        if 'name' not in keys:
-            log.error("Key \"name\" missing in mode %s", mdict)
+        if "name" not in keys:
+            log.error('Key "name" missing in mode %s', mdict)
             sys.exit(1)
 
         if not hasattr(self, "type"):
-            log.fatal("Key \"type\" is missing or invalid")
+            log.fatal('Key "type" is missing or invalid')
             sys.exit(1)
 
         if not hasattr(self, "mname"):
@@ -66,10 +66,10 @@ class Modes():
         setattr(self, "en_" + self.type + "_modes", sub_modes)
 
     def merge_mode(self, mode):
-        '''
+        """
         Merge a new mode with self.
         Merge sub mode specified with 'en_*_modes with self.
-        '''
+        """
 
         sub_modes = self.get_sub_modes()
         is_sub_mode = mode.name in sub_modes
@@ -83,7 +83,7 @@ class Modes():
             mode_attr_val = getattr(mode, attr, None)
 
             # If sub-mode, skip the name fields - they could differ.
-            if is_sub_mode and attr in ['name', 'mname']:
+            if is_sub_mode and attr in ["name", "mname"]:
                 continue
 
             # If mode's value is None, then nothing to do here.
@@ -109,8 +109,10 @@ class Modes():
             scalar_types = {str: "", int: -1}
             default_val = scalar_types.get(type(self_attr_val))
 
-            if type(self_attr_val) in scalar_types.keys(
-            ) and self_attr_val == default_val:
+            if (
+                type(self_attr_val) in scalar_types.keys()
+                and self_attr_val == default_val
+            ):
                 setattr(self, attr, mode_attr_val)
                 continue
 
@@ -118,9 +120,15 @@ class Modes():
             if type(self_attr_val) != type(mode_attr_val):
                 log.error(
                     "Mode %s cannot be merged into %s due to a conflict "
-                    "(type mismatch): %s: {%s(%s), %s(%s)}", name, self.name,
-                    attr, str(self_attr_val), str(type(self_attr_val)),
-                    str(mode_attr_val), str(type(mode_attr_val)))
+                    "(type mismatch): %s: {%s(%s), %s(%s)}",
+                    name,
+                    self.name,
+                    attr,
+                    str(self_attr_val),
+                    str(type(self_attr_val)),
+                    str(mode_attr_val),
+                    str(type(mode_attr_val)),
+                )
                 sys.exit(1)
 
             # Check if they are different non-default values.
@@ -128,8 +136,13 @@ class Modes():
                 log.error(
                     "Mode %s cannot be merged into %s due to a conflict "
                     "(unable to pick one from different values): "
-                    "%s: {%s, %s}", name, self.name, attr, str(self_attr_val),
-                    str(mode_attr_val))
+                    "%s: {%s, %s}",
+                    name,
+                    self.name,
+                    attr,
+                    str(self_attr_val),
+                    str(mode_attr_val),
+                )
                 sys.exit(1)
 
         # Check newly appended sub_modes, remove 'self' and duplicates
@@ -145,11 +158,12 @@ class Modes():
 
     @staticmethod
     def create_modes(ModeType, mdicts):
-        '''
+        """
         Create modes of type ModeType from a given list of raw dicts
         Process dependencies.
         Return a list of modes objects.
-        '''
+        """
+
         def merge_sub_modes(mode, parent, objs):
             # Check if there are modes available to merge
             sub_modes = mode.get_sub_modes()
@@ -161,8 +175,7 @@ class Modes():
                 parent = mode
             else:
                 if mode.name == parent.name:
-                    log.error("Cyclic dependency when processing mode \"%s\"",
-                              mode.name)
+                    log.error('Cyclic dependency when processing mode "%s"', mode.name)
                     sys.exit(1)
 
             for sub_mode in sub_modes:
@@ -179,8 +192,10 @@ class Modes():
                         break
                 if not found:
                     log.error(
-                        "Sub mode \"%s\" added to mode \"%s\" was not found!",
-                        sub_mode, mode.name)
+                        'Sub mode "%s" added to mode "%s" was not found!',
+                        sub_mode,
+                        mode.name,
+                    )
                     sys.exit(1)
 
         modes_objs = []
@@ -220,10 +235,10 @@ class Modes():
 
     @staticmethod
     def find_mode(mode_name, modes):
-        '''
+        """
         Given a mode_name in string, go through list of modes and return the mode with
         the string that matches. Thrown an error and return None if nothing was found.
-        '''
+        """
         for mode in modes:
             if mode_name == mode.name:
                 return mode
@@ -231,8 +246,7 @@ class Modes():
 
     @staticmethod
     def find_and_merge_modes(mode, mode_names, modes, merge_modes=True):
-        '''
-        '''
+        """"""
         found_mode_objs = []
         for mode_name in mode_names:
             sub_mode = Modes.find_mode(mode_name, modes)
@@ -241,8 +255,11 @@ class Modes():
                 if merge_modes is True:
                     mode.merge_mode(sub_mode)
             else:
-                log.error("Mode \"%s\" enabled within mode \"%s\" not found!",
-                          mode_name, mode.name)
+                log.error(
+                    'Mode "%s" enabled within mode "%s" not found!',
+                    mode_name,
+                    mode.name,
+                )
                 sys.exit(1)
         return found_mode_objs
 
@@ -336,12 +353,13 @@ class Tests(RunModes):
 
     @staticmethod
     def create_tests(tdicts, sim_cfg):
-        '''
+        """
         Create Tests from a given list of raw dicts.
         TODO: enhance the raw dict to include file scoped defaults.
         Process enabled run modes and the set build mode.
         Return a list of test objects.
-        '''
+        """
+
         def get_pruned_en_run_modes(test_en_run_modes, global_en_run_modes):
             pruned_en_run_modes = []
             for test_en_run_mode in test_en_run_modes:
@@ -379,8 +397,9 @@ class Tests(RunModes):
         attrs = Tests.defaults
         for test_obj in tests_objs:
             # Unpack run_modes first
-            en_run_modes = get_pruned_en_run_modes(test_obj.en_run_modes,
-                                                   sim_cfg.en_run_modes)
+            en_run_modes = get_pruned_en_run_modes(
+                test_obj.en_run_modes, sim_cfg.en_run_modes
+            )
             Modes.find_and_merge_modes(test_obj, en_run_modes, run_modes)
 
             # Find and set the missing attributes from sim_cfg
@@ -400,17 +419,18 @@ class Tests(RunModes):
                         setattr(test_obj, attr, global_val)
 
             # Unpack the build mode for this test
-            build_mode_objs = Modes.find_and_merge_modes(test_obj,
-                                                         [test_obj.build_mode],
-                                                         build_modes,
-                                                         merge_modes=False)
+            build_mode_objs = Modes.find_and_merge_modes(
+                test_obj, [test_obj.build_mode], build_modes, merge_modes=False
+            )
             test_obj.build_mode = build_mode_objs[0]
 
             # Error if set build mode is actually a sim mode
             if test_obj.build_mode.is_sim_mode is True:
                 log.error(
-                    "Test \"%s\" uses build_mode %s which is actually a sim mode",
-                    test_obj.name, test_obj.build_mode.name)
+                    'Test "%s" uses build_mode %s which is actually a sim mode',
+                    test_obj.name,
+                    test_obj.build_mode.name,
+                )
                 sys.exit(1)
 
             # Merge build_mode's params with self
@@ -423,9 +443,16 @@ class Tests(RunModes):
         return tests_objs
 
     @staticmethod
-    def merge_global_opts(tests, global_pre_build_cmds, global_post_build_cmds,
-                          global_build_opts, global_pre_run_cmds,
-                          global_post_run_cmds, global_run_opts, global_sw_images):
+    def merge_global_opts(
+        tests,
+        global_pre_build_cmds,
+        global_post_build_cmds,
+        global_build_opts,
+        global_pre_run_cmds,
+        global_post_run_cmds,
+        global_run_opts,
+        global_sw_images,
+    ):
         processed_build_modes = []
         for test in tests:
             if test.build_mode.name not in processed_build_modes:
@@ -479,10 +506,10 @@ class Regressions(Modes):
 
     @staticmethod
     def create_regressions(regdicts, sim_cfg, tests):
-        '''
+        """
         Create Test sets from a given list of raw dicts.
         Return a list of test set objects.
-        '''
+        """
 
         regressions_objs = []
         # Pass 1: Create unique set of test sets by merging test sets with the same name
@@ -495,8 +522,9 @@ class Regressions(Modes):
             if new_regression.name in Tests.item_names:
                 log.error(
                     "Test names and regression names are required to be unique. "
-                    "The regression \"%s\" bears the same name with an existing test. ",
-                    new_regression.name)
+                    'The regression "%s" bears the same name with an existing test. ',
+                    new_regression.name,
+                )
                 sys.exit(1)
 
             for regression in regressions_objs:
@@ -523,14 +551,16 @@ class Regressions(Modes):
         for regression_obj in regressions_objs:
             # Unpack the sim modes
             found_sim_mode_objs = Modes.find_and_merge_modes(
-                regression_obj, regression_obj.en_sim_modes, build_modes,
-                False)
+                regression_obj, regression_obj.en_sim_modes, build_modes, False
+            )
 
             for sim_mode_obj in found_sim_mode_objs:
                 if sim_mode_obj.is_sim_mode == 0:
                     log.error(
-                        "Enabled mode \"%s\" within the regression \"%s\" is not a sim mode",
-                        sim_mode_obj.name, regression_obj.name)
+                        'Enabled mode "%s" within the regression "%s" is not a sim mode',
+                        sim_mode_obj.name,
+                        regression_obj.name,
+                    )
                     sys.exit(1)
 
                 # Check if sim_mode_obj's sub-modes are a part of regressions's
@@ -539,10 +569,12 @@ class Regressions(Modes):
                 for sim_mode_obj_sub in sim_mode_obj.en_build_modes:
                     if sim_mode_obj_sub in regression_obj.en_sim_modes:
                         log.error(
-                            "Regression \"%s\" enables sim_modes \"%s\" and \"%s\". "
+                            'Regression "%s" enables sim_modes "%s" and "%s". '
                             "The former is already a sub_mode of the latter.",
-                            regression_obj.name, sim_mode_obj_sub,
-                            sim_mode_obj.name)
+                            regression_obj.name,
+                            sim_mode_obj_sub,
+                            sim_mode_obj.name,
+                        )
                         sys.exit(1)
 
                 # Check if sim_mode_obj is also passed on the command line, in
@@ -551,10 +583,8 @@ class Regressions(Modes):
                     continue
 
                 # Merge the build and run cmds & opts from the sim modes
-                regression_obj.pre_build_cmds.extend(
-                    sim_mode_obj.pre_build_cmds)
-                regression_obj.post_build_cmds.extend(
-                    sim_mode_obj.post_build_cmds)
+                regression_obj.pre_build_cmds.extend(sim_mode_obj.pre_build_cmds)
+                regression_obj.post_build_cmds.extend(sim_mode_obj.post_build_cmds)
                 regression_obj.build_opts.extend(sim_mode_obj.build_opts)
                 regression_obj.pre_run_cmds.extend(sim_mode_obj.pre_run_cmds)
                 regression_obj.post_run_cmds.extend(sim_mode_obj.post_run_cmds)
@@ -564,7 +594,8 @@ class Regressions(Modes):
             # TODO: If there are other params other than run_opts throw an
             # error and exit
             found_run_mode_objs = Modes.find_and_merge_modes(
-                regression_obj, regression_obj.en_run_modes, run_modes, False)
+                regression_obj, regression_obj.en_run_modes, run_modes, False
+            )
 
             # Only merge the pre_run_cmds, post_run_cmds & run_opts from the
             # run_modes enabled
@@ -581,9 +612,11 @@ class Regressions(Modes):
             # If `tests` member resolves to None, then we add ALL available
             # tests for running the regression.
             if regression_obj.tests is None:
-                log.log(VERBOSE,
-                        "Unpacking all tests in scope for regression \"%s\"",
-                        regression_obj.name)
+                log.log(
+                    VERBOSE,
+                    'Unpacking all tests in scope for regression "%s"',
+                    regression_obj.name,
+                )
                 regression_obj.tests = sim_cfg.tests
                 regression_obj.test_names = Tests.item_names
 
@@ -594,8 +627,10 @@ class Regressions(Modes):
                     test_obj = Modes.find_mode(test, sim_cfg.tests)
                     if test_obj is None:
                         log.error(
-                            "Test \"%s\" added to regression \"%s\" not found!",
-                            test, regression_obj.name)
+                            'Test "%s" added to regression "%s" not found!',
+                            test,
+                            regression_obj.name,
+                        )
                         continue
                     tests_objs.append(test_obj)
                 regression_obj.tests = tests_objs

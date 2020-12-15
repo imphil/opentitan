@@ -14,8 +14,7 @@ def elaborate(xbar: Xbar) -> bool:
     """
     # Condition check
     if len(xbar.nodes) <= 1 or len(xbar.edges) == 0:
-        log.error(
-            "# of Nodes is less than 2 or no Edge exists. Cannot proceed.")
+        log.error("# of Nodes is less than 2 or no Edge exists. Cannot proceed.")
         return False
 
     for host in xbar.hosts:
@@ -58,10 +57,12 @@ def process_node(node, xbar):  # node: Node -> xbar: Xbar -> Xbar
     # If a node has different clock from main clock and not ASYNC_FIFO:
     if node.node_type != NodeType.ASYNC_FIFO and node.clocks[0] != xbar.clock:
         # (New Node) Create ASYNC_FIFO node
-        new_node = Node(name="asf_" + str(len(xbar.nodes)),
-                        node_type=NodeType.ASYNC_FIFO,
-                        clock=xbar.clock,
-                        reset=xbar.reset)
+        new_node = Node(
+            name="asf_" + str(len(xbar.nodes)),
+            node_type=NodeType.ASYNC_FIFO,
+            clock=xbar.clock,
+            reset=xbar.reset,
+        )
 
         # if node is HOST, host clock synchronizes into xbar domain
         # if node is DEVICE, xbar synchronizes into device clock domain
@@ -79,15 +80,17 @@ def process_node(node, xbar):  # node: Node -> xbar: Xbar -> Xbar
     # If a node has multiple edges having it as a end node and not SOCKET_M1:
     elif node.node_type != NodeType.SOCKET_M1 and len(node.us) > 1:
         # (New node) Create SOCKET_M1 node
-        new_node = Node(name="sm1_" + str(len(xbar.nodes)),
-                        node_type=NodeType.SOCKET_M1,
-                        clock=xbar.clock,
-                        reset=xbar.reset)
+        new_node = Node(
+            name="sm1_" + str(len(xbar.nodes)),
+            node_type=NodeType.SOCKET_M1,
+            clock=xbar.clock,
+            reset=xbar.reset,
+        )
 
         # By default, assume connecting to SOCKET_1N upstream and bypass all FIFOs
         # If upstream requires pipelining, it will be added through process pipeline
         new_node.hdepth = 0
-        new_node.hpass = 2**len(node.us) - 1
+        new_node.hpass = 2 ** len(node.us) - 1
         new_node.ddepth = 0
         new_node.dpass = 1
         xbar.insert_node(new_node, node)
@@ -96,17 +99,19 @@ def process_node(node, xbar):  # node: Node -> xbar: Xbar -> Xbar
     # If a node has multiple edges having it as a start node and not SOCKET_1N:
     elif node.node_type != NodeType.SOCKET_1N and len(node.ds) > 1:
         # (New node) Create SOCKET_1N node
-        new_node = Node(name="s1n_" + str(len(xbar.nodes)),
-                        node_type=NodeType.SOCKET_1N,
-                        clock=xbar.clock,
-                        reset=xbar.reset)
+        new_node = Node(
+            name="s1n_" + str(len(xbar.nodes)),
+            node_type=NodeType.SOCKET_1N,
+            clock=xbar.clock,
+            reset=xbar.reset,
+        )
 
         # By default, assume connecting to SOCKET_M1 downstream and bypass all FIFOs
         # If upstream requires pipelining, it will be added through process pipeline
         new_node.hdepth = 0
         new_node.hpass = 1
         new_node.ddepth = 0
-        new_node.dpass = 2**len(node.ds) - 1
+        new_node.dpass = 2 ** len(node.ds) - 1
         xbar.insert_node(new_node, node)
 
         # (for loop) Repeat the algorithm with SOCKET_1N's other side node
@@ -117,8 +122,7 @@ def process_node(node, xbar):  # node: Node -> xbar: Xbar -> Xbar
 
 
 def process_pipeline(xbar):
-    """Check if HOST, DEVICE has settings different from default, then propagate it to end
-    """
+    """Check if HOST, DEVICE has settings different from default, then propagate it to end"""
     for host in xbar.hosts:
         # go downstream and change the HReqPass/Depth at the first instance.
         # If it is async, skip.
@@ -163,7 +167,9 @@ def process_pipeline(xbar):
 
             log.info(
                 "Finished processing socket1n {}, pass={}, depth={}".format(
-                    dnode.name, dnode.hpass, dnode.hdepth))
+                    dnode.name, dnode.hpass, dnode.hdepth
+                )
+            )
 
         elif dnode.node_type == NodeType.SOCKET_M1:
             idx = dnode.us.index(host.ds[0])
@@ -182,7 +188,9 @@ def process_pipeline(xbar):
 
             log.info(
                 "Finished processing socketm1 {}, pass={}, depth={}".format(
-                    dnode.name, dnode.hpass, dnode.hdepth))
+                    dnode.name, dnode.hpass, dnode.hdepth
+                )
+            )
 
     for device in xbar.devices:
         # go upstream and set DReq/RspPass at the first instance.
@@ -229,8 +237,11 @@ def process_pipeline(xbar):
                 unode.dpass = unode.dpass | (1 << idx)
                 unode.ddepth = unode.ddepth & ~(0xF << idx * 4)
 
-            log.info("Finished processing socket1n {}, pass={:x}, depth={:x}".
-                     format(unode.name, unode.dpass, unode.ddepth))
+            log.info(
+                "Finished processing socket1n {}, pass={:x}, depth={:x}".format(
+                    unode.name, unode.dpass, unode.ddepth
+                )
+            )
 
         elif unode.node_type == NodeType.SOCKET_M1:
             if full_fifo:
@@ -246,7 +257,10 @@ def process_pipeline(xbar):
                 unode.dpass = 1
                 unode.ddepth = 0
 
-            log.info("Finished processing socketm1 {}, pass={:x}, depth={:x}".
-                     format(unode.name, unode.dpass, unode.ddepth))
+            log.info(
+                "Finished processing socketm1 {}, pass={:x}, depth={:x}".format(
+                    unode.name, unode.dpass, unode.ddepth
+                )
+            )
 
     return xbar

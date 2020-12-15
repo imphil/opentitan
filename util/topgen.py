@@ -26,14 +26,17 @@ from topgen import merge_top, search_ips, validate_top
 from topgen.c import TopGenC
 
 # Common header for generated files
-warnhdr = '''//
+warnhdr = """//
 // ------------------- W A R N I N G: A U T O - G E N E R A T E D   C O D E !! -------------------//
 // PLEASE DO NOT HAND-EDIT THIS FILE. IT HAS BEEN AUTO-GENERATED WITH THE FOLLOWING COMMAND:
-'''
-genhdr = '''// Copyright lowRISC contributors.
+"""
+genhdr = (
+    """// Copyright lowRISC contributors.
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
-''' + warnhdr
+"""
+    + warnhdr
+)
 
 SRCTREE_TOP = Path(__file__).parent.parent.resolve()
 
@@ -50,19 +53,20 @@ def generate_top(top, tpl_filename, **kwargs):
 
 def generate_xbars(top, out_path):
     topname = top["name"]
-    gencmd = ("// util/topgen.py -t hw/top_{topname}/data/top_{topname}.hjson "
-              "-o hw/top_{topname}/\n\n".format(topname=topname))
+    gencmd = (
+        "// util/topgen.py -t hw/top_{topname}/data/top_{topname}.hjson "
+        "-o hw/top_{topname}/\n\n".format(topname=topname)
+    )
 
     for obj in top["xbar"]:
-        xbar_path = out_path / 'ip/xbar_{}/data/autogen'.format(obj["name"])
+        xbar_path = out_path / "ip/xbar_{}/data/autogen".format(obj["name"])
         xbar_path.mkdir(parents=True, exist_ok=True)
         xbar = tlgen.validate(obj)
-        xbar.ip_path = 'hw/top_' + top["name"] + '/ip/{dut}'
+        xbar.ip_path = "hw/top_" + top["name"] + "/ip/{dut}"
 
         # Generate output of crossbar with complete fields
         xbar_hjson_path = xbar_path / "xbar_{}.gen.hjson".format(xbar.name)
-        xbar_hjson_path.write_text(genhdr + gencmd +
-                                   hjson.dumps(obj, for_json=True))
+        xbar_hjson_path.write_text(genhdr + gencmd + hjson.dumps(obj, for_json=True))
 
         if not tlgen.elaborate(xbar):
             log.error("Elaboration failed." + repr(xbar))
@@ -72,15 +76,15 @@ def generate_xbars(top, out_path):
         except:  # noqa: E722
             log.error(exceptions.text_error_template().render())
 
-        ip_path = out_path / 'ip/xbar_{}'.format(obj["name"])
+        ip_path = out_path / "ip/xbar_{}".format(obj["name"])
 
         for filename, filecontent in results:
             filepath = ip_path / filename
             filepath.parent.mkdir(parents=True, exist_ok=True)
-            with filepath.open(mode='w', encoding='UTF-8') as fout:
+            with filepath.open(mode="w", encoding="UTF-8") as fout:
                 fout.write(filecontent)
 
-        dv_path = out_path / 'ip/xbar_{}/dv/autogen'.format(obj["name"])
+        dv_path = out_path / "ip/xbar_{}/dv/autogen".format(obj["name"])
         dv_path.mkdir(parents=True, exist_ok=True)
 
         # generate testbench for xbar
@@ -89,17 +93,16 @@ def generate_xbars(top, out_path):
         # Read back the comportable IP and amend to Xbar
         xbar_ipfile = ip_path / ("data/autogen/xbar_%s.hjson" % obj["name"])
         with xbar_ipfile.open() as fxbar:
-            xbar_ipobj = hjson.load(fxbar,
-                                    use_decimal=True,
-                                    object_pairs_hook=OrderedDict)
+            xbar_ipobj = hjson.load(
+                fxbar, use_decimal=True, object_pairs_hook=OrderedDict
+            )
 
             # Deepcopy of the inter_signal_list.
             # As of writing the code, it is not expected to write-back the
             # read xbar objects into files. Still, as `inter_signal_list` is
             # modified in the `elab_intermodule()` stage, it is better to keep
             # the original content.
-            obj["inter_signal_list"] = deepcopy(
-                xbar_ipobj["inter_signal_list"])
+            obj["inter_signal_list"] = deepcopy(xbar_ipobj["inter_signal_list"])
 
 
 def generate_alert_handler(top, out_path):
@@ -116,11 +119,11 @@ def generate_alert_handler(top, out_path):
     # the generated package
     ip_list_in_top = [x["name"].lower() for x in top["module"]]
     ah_idx = ip_list_in_top.index("alert_handler")
-    if 'localparam' in top['module'][ah_idx]:
-        if 'EscCntDw' in top['module'][ah_idx]['localparam']:
-            esc_cnt_dw = int(top['module'][ah_idx]['localparam']['EscCntDw'])
-        if 'AccuCntDw' in top['module'][ah_idx]['localparam']:
-            accu_cnt_dw = int(top['module'][ah_idx]['localparam']['AccuCntDw'])
+    if "localparam" in top["module"][ah_idx]:
+        if "EscCntDw" in top["module"][ah_idx]["localparam"]:
+            esc_cnt_dw = int(top["module"][ah_idx]["localparam"]["EscCntDw"])
+        if "AccuCntDw" in top["module"][ah_idx]["localparam"]:
+            accu_cnt_dw = int(top["module"][ah_idx]["localparam"]["AccuCntDw"])
 
     if esc_cnt_dw < 1:
         log.error("EscCntDw must be larger than 0")
@@ -137,9 +140,9 @@ def generate_alert_handler(top, out_path):
         log.warning("no alerts are defined in the system")
     else:
         async_on = ""
-        for alert in top['alert']:
-            for k in range(alert['width']):
-                async_on = str(alert['async']) + async_on
+        for alert in top["alert"]:
+            for k in range(alert["width"]):
+                async_on = str(alert["async"]) + async_on
         async_on = ("%d'b" % n_alerts) + async_on
 
     log.info("alert handler parameterization:")
@@ -149,29 +152,31 @@ def generate_alert_handler(top, out_path):
     log.info("AsyncOn   = %s" % async_on)
 
     # Define target path
-    rtl_path = out_path / 'ip/alert_handler/rtl/autogen'
+    rtl_path = out_path / "ip/alert_handler/rtl/autogen"
     rtl_path.mkdir(parents=True, exist_ok=True)
-    doc_path = out_path / 'ip/alert_handler/data/autogen'
+    doc_path = out_path / "ip/alert_handler/data/autogen"
     doc_path.mkdir(parents=True, exist_ok=True)
-    dv_path = out_path / 'ip/alert_handler/dv'
+    dv_path = out_path / "ip/alert_handler/dv"
     dv_path.mkdir(parents=True, exist_ok=True)
 
     # Generating IP top module script is not generalized yet.
     # So, topgen reads template files from alert_handler directory directly.
-    tpl_path = Path(__file__).resolve().parent / '../hw/ip/alert_handler/data'
-    hjson_tpl_path = tpl_path / 'alert_handler.hjson.tpl'
-    dv_tpl_path = tpl_path / 'alert_handler_env_pkg__params.sv.tpl'
+    tpl_path = Path(__file__).resolve().parent / "../hw/ip/alert_handler/data"
+    hjson_tpl_path = tpl_path / "alert_handler.hjson.tpl"
+    dv_tpl_path = tpl_path / "alert_handler_env_pkg__params.sv.tpl"
 
     # Generate Register Package and RTLs
     out = StringIO()
-    with hjson_tpl_path.open(mode='r', encoding='UTF-8') as fin:
+    with hjson_tpl_path.open(mode="r", encoding="UTF-8") as fin:
         hjson_tpl = Template(fin.read())
         try:
-            out = hjson_tpl.render(n_alerts=n_alerts,
-                                   esc_cnt_dw=esc_cnt_dw,
-                                   accu_cnt_dw=accu_cnt_dw,
-                                   async_on=async_on,
-                                   n_classes=n_classes)
+            out = hjson_tpl.render(
+                n_alerts=n_alerts,
+                esc_cnt_dw=esc_cnt_dw,
+                accu_cnt_dw=accu_cnt_dw,
+                async_on=async_on,
+                n_classes=n_classes,
+            )
         except:  # noqa: E722
             log.error(exceptions.text_error_template().render())
         log.info("alert_handler hjson: %s" % out)
@@ -183,20 +188,21 @@ def generate_alert_handler(top, out_path):
     hjson_gen_path = doc_path / "alert_handler.hjson"
     gencmd = (
         "// util/topgen.py -t hw/top_{topname}/data/top_{topname}.hjson --alert-handler-only "
-        "-o hw/top_{topname}/\n\n".format(topname=topname))
-    with hjson_gen_path.open(mode='w', encoding='UTF-8') as fout:
+        "-o hw/top_{topname}/\n\n".format(topname=topname)
+    )
+    with hjson_gen_path.open(mode="w", encoding="UTF-8") as fout:
         fout.write(genhdr + gencmd + out)
 
     # Generate register RTLs (currently using shell execute)
     # TODO: More secure way to gneerate RTL
-    hjson_obj = hjson.loads(out,
-                            use_decimal=True,
-                            object_pairs_hook=validate.checking_dict)
+    hjson_obj = hjson.loads(
+        out, use_decimal=True, object_pairs_hook=validate.checking_dict
+    )
     validate.validate(hjson_obj)
     gen_rtl.gen_rtl(hjson_obj, str(rtl_path))
 
     # generate testbench for alert_handler
-    with dv_tpl_path.open(mode='r', encoding='UTF-8') as fin:
+    with dv_tpl_path.open(mode="r", encoding="UTF-8") as fin:
         dv_tpl = Template(fin.read())
         try:
             out = dv_tpl.render(n_alerts=n_alerts, async_on=async_on)
@@ -207,8 +213,8 @@ def generate_alert_handler(top, out_path):
             log.error("Cannot generate dv alert_handler parameter file")
             return
 
-        dv_gen_path = dv_path / 'alert_handler_env_pkg__params.sv'
-        with dv_gen_path.open(mode='w', encoding='UTF-8') as fout:
+        dv_gen_path = dv_path / "alert_handler_env_pkg__params.sv"
+        with dv_gen_path.open(mode="w", encoding="UTF-8") as fout:
             fout.write(genhdr + gencmd + out)
 
 
@@ -217,8 +223,7 @@ def generate_plic(top, out_path):
     # Count number of interrupts
     # Interrupt source 0 is tied to 0 to conform RISC-V PLIC spec.
     # So, total number of interrupts are the number of entries in the list + 1
-    src = sum([x["width"] if "width" in x else 1
-               for x in top["interrupt"]]) + 1
+    src = sum([x["width"] if "width" in x else 1 for x in top["interrupt"]]) + 1
 
     # Target and priority: Currently fixed
     target = int(top["num_cores"], 0) if "num_cores" in top else 1
@@ -227,23 +232,23 @@ def generate_plic(top, out_path):
     # Define target path
     #   rtl: rv_plic.sv & rv_plic_reg_pkg.sv & rv_plic_reg_top.sv
     #   data: rv_plic.hjson
-    rtl_path = out_path / 'ip/rv_plic/rtl/autogen'
+    rtl_path = out_path / "ip/rv_plic/rtl/autogen"
     rtl_path.mkdir(parents=True, exist_ok=True)
-    doc_path = out_path / 'ip/rv_plic/data/autogen'
+    doc_path = out_path / "ip/rv_plic/data/autogen"
     doc_path.mkdir(parents=True, exist_ok=True)
-    hjson_path = out_path / 'ip/rv_plic/data/autogen'
+    hjson_path = out_path / "ip/rv_plic/data/autogen"
     hjson_path.mkdir(parents=True, exist_ok=True)
 
     # Generating IP top module script is not generalized yet.
     # So, topgen reads template files from rv_plic directory directly.
     # Next, if the ip top gen tool is placed in util/ we can import the library.
-    tpl_path = Path(__file__).resolve().parent / '../hw/ip/rv_plic/data'
-    hjson_tpl_path = tpl_path / 'rv_plic.hjson.tpl'
-    rtl_tpl_path = tpl_path / 'rv_plic.sv.tpl'
+    tpl_path = Path(__file__).resolve().parent / "../hw/ip/rv_plic/data"
+    hjson_tpl_path = tpl_path / "rv_plic.hjson.tpl"
+    rtl_tpl_path = tpl_path / "rv_plic.sv.tpl"
 
     # Generate Register Package and RTLs
     out = StringIO()
-    with hjson_tpl_path.open(mode='r', encoding='UTF-8') as fin:
+    with hjson_tpl_path.open(mode="r", encoding="UTF-8") as fin:
         hjson_tpl = Template(fin.read())
         try:
             out = hjson_tpl.render(src=src, target=target, prio=prio)
@@ -258,20 +263,19 @@ def generate_plic(top, out_path):
     hjson_gen_path = hjson_path / "rv_plic.hjson"
     gencmd = (
         "// util/topgen.py -t hw/top_{topname}/data/top_{topname}.hjson --plic-only "
-        "-o hw/top_{topname}/\n\n".format(topname=topname))
-    with hjson_gen_path.open(mode='w', encoding='UTF-8') as fout:
+        "-o hw/top_{topname}/\n\n".format(topname=topname)
+    )
+    with hjson_gen_path.open(mode="w", encoding="UTF-8") as fout:
         fout.write(genhdr + gencmd + out)
 
     # Generate register RTLs (currently using shell execute)
     # TODO: More secure way to generate RTL
-    hjson_obj = hjson.loads(out,
-                            use_decimal=True,
-                            object_pairs_hook=OrderedDict)
+    hjson_obj = hjson.loads(out, use_decimal=True, object_pairs_hook=OrderedDict)
     validate.validate(hjson_obj)
     gen_rtl.gen_rtl(hjson_obj, str(rtl_path))
 
     # Generate RV_PLIC Top Module
-    with rtl_tpl_path.open(mode='r', encoding='UTF-8') as fin:
+    with rtl_tpl_path.open(mode="r", encoding="UTF-8") as fin:
         rtl_tpl = Template(fin.read())
         try:
             out = rtl_tpl.render(src=src, target=target, prio=prio)
@@ -284,7 +288,7 @@ def generate_plic(top, out_path):
         return
 
     rtl_gen_path = rtl_path / "rv_plic.sv"
-    with rtl_gen_path.open(mode='w', encoding='UTF-8') as fout:
+    with rtl_gen_path.open(mode="w", encoding="UTF-8") as fout:
         fout.write(genhdr + gencmd + out)
 
 
@@ -294,14 +298,18 @@ def generate_pinmux_and_padctrl(top, out_path):
     n_mio_pads = top["pinmux"]["num_mio"]
     if n_mio_pads <= 0:
         # TODO: add support for no MIO case
-        log.error("Topgen does currently not support generation of a top " +
-                  "without a pinmux.")
+        log.error(
+            "Topgen does currently not support generation of a top "
+            + "without a pinmux."
+        )
         return
 
     if "padctrl" not in top:
         # TODO: add support for no MIO case
-        log.error("Topgen does currently not support generation of a top " +
-                  "without a padctrl instance.")
+        log.error(
+            "Topgen does currently not support generation of a top "
+            + "without a padctrl instance."
+        )
         return
 
     # Get number of wakeup detectors
@@ -312,8 +320,9 @@ def generate_pinmux_and_padctrl(top, out_path):
 
     if num_wkup_detect <= 0:
         # TODO: add support for no wakeup counter case
-        log.error("Topgen does currently not support generation of a top " +
-                  "without DIOs.")
+        log.error(
+            "Topgen does currently not support generation of a top " + "without DIOs."
+        )
         return
 
     if "wkup_cnt_width" in top["pinmux"]:
@@ -331,16 +340,15 @@ def generate_pinmux_and_padctrl(top, out_path):
     num_mio_outputs = sum([x["width"] for x in top["pinmux"]["outputs"]])
     num_mio_inouts = sum([x["width"] for x in top["pinmux"]["inouts"]])
 
-    num_dio_inputs = sum([
-        x["width"] if x["type"] == "input" else 0 for x in top["pinmux"]["dio"]
-    ])
-    num_dio_outputs = sum([
-        x["width"] if x["type"] == "output" else 0
-        for x in top["pinmux"]["dio"]
-    ])
-    num_dio_inouts = sum([
-        x["width"] if x["type"] == "inout" else 0 for x in top["pinmux"]["dio"]
-    ])
+    num_dio_inputs = sum(
+        [x["width"] if x["type"] == "input" else 0 for x in top["pinmux"]["dio"]]
+    )
+    num_dio_outputs = sum(
+        [x["width"] if x["type"] == "output" else 0 for x in top["pinmux"]["dio"]]
+    )
+    num_dio_inouts = sum(
+        [x["width"] if x["type"] == "inout" else 0 for x in top["pinmux"]["dio"]]
+    )
 
     n_mio_periph_in = num_mio_inouts + num_mio_inputs
     n_mio_periph_out = num_mio_inouts + num_mio_outputs
@@ -350,8 +358,9 @@ def generate_pinmux_and_padctrl(top, out_path):
 
     if n_dio_pads <= 0:
         # TODO: add support for no DIO case
-        log.error("Topgen does currently not support generation of a top " +
-                  "without DIOs.")
+        log.error(
+            "Topgen does currently not support generation of a top " + "without DIOs."
+        )
         return
 
     log.info("Generating pinmux with following info from hjson:")
@@ -373,23 +382,24 @@ def generate_pinmux_and_padctrl(top, out_path):
     # Target path
     #   rtl: pinmux_reg_pkg.sv & pinmux_reg_top.sv
     #   data: pinmux.hjson
-    rtl_path = out_path / 'ip/pinmux/rtl/autogen'
+    rtl_path = out_path / "ip/pinmux/rtl/autogen"
     rtl_path.mkdir(parents=True, exist_ok=True)
-    data_path = out_path / 'ip/pinmux/data/autogen'
+    data_path = out_path / "ip/pinmux/data/autogen"
     data_path.mkdir(parents=True, exist_ok=True)
 
     # Template path
-    tpl_path = Path(
-        __file__).resolve().parent / '../hw/ip/pinmux/data/pinmux.hjson.tpl'
+    tpl_path = Path(__file__).resolve().parent / "../hw/ip/pinmux/data/pinmux.hjson.tpl"
 
     # Generate register package and RTLs
-    gencmd = ("// util/topgen.py -t hw/top_{topname}/data/top_{topname}.hjson "
-              "-o hw/top_{topname}/\n\n".format(topname=topname))
+    gencmd = (
+        "// util/topgen.py -t hw/top_{topname}/data/top_{topname}.hjson "
+        "-o hw/top_{topname}/\n\n".format(topname=topname)
+    )
 
     hjson_gen_path = data_path / "pinmux.hjson"
 
     out = StringIO()
-    with tpl_path.open(mode='r', encoding='UTF-8') as fin:
+    with tpl_path.open(mode="r", encoding="UTF-8") as fin:
         hjson_tpl = Template(fin.read())
         try:
             # TODO: pass in information about always-on peripherals
@@ -408,7 +418,8 @@ def generate_pinmux_and_padctrl(top, out_path):
                 n_dio_periph_out=n_dio_pads,
                 n_dio_pads=n_dio_pads,
                 n_wkup_detect=num_wkup_detect,
-                wkup_cnt_width=wkup_cnt_width)
+                wkup_cnt_width=wkup_cnt_width,
+            )
         except:  # noqa: E722
             log.error(exceptions.text_error_template().render())
         log.info("PINMUX HJSON: %s" % out)
@@ -417,40 +428,43 @@ def generate_pinmux_and_padctrl(top, out_path):
         log.error("Cannot generate pinmux HJSON")
         return
 
-    with hjson_gen_path.open(mode='w', encoding='UTF-8') as fout:
+    with hjson_gen_path.open(mode="w", encoding="UTF-8") as fout:
         fout.write(genhdr + gencmd + out)
 
-    hjson_obj = hjson.loads(out,
-                            use_decimal=True,
-                            object_pairs_hook=validate.checking_dict)
+    hjson_obj = hjson.loads(
+        out, use_decimal=True, object_pairs_hook=validate.checking_dict
+    )
     validate.validate(hjson_obj)
     gen_rtl.gen_rtl(hjson_obj, str(rtl_path))
 
     # Target path
     #   rtl: padctrl_reg_pkg.sv & padctrl_reg_top.sv
     #   data: padctrl.hjson
-    rtl_path = out_path / 'ip/padctrl/rtl/autogen'
+    rtl_path = out_path / "ip/padctrl/rtl/autogen"
     rtl_path.mkdir(parents=True, exist_ok=True)
-    data_path = out_path / 'ip/padctrl/data/autogen'
+    data_path = out_path / "ip/padctrl/data/autogen"
     data_path.mkdir(parents=True, exist_ok=True)
 
     # Template path
-    tpl_path = Path(
-        __file__).resolve().parent / '../hw/ip/padctrl/data/padctrl.hjson.tpl'
+    tpl_path = (
+        Path(__file__).resolve().parent / "../hw/ip/padctrl/data/padctrl.hjson.tpl"
+    )
 
     # Generate register package and RTLs
-    gencmd = ("// util/topgen.py -t hw/top_{topname}/data/top_{topname}.hjson "
-              "-o hw/top_{topname}/\n\n".format(topname=topname))
+    gencmd = (
+        "// util/topgen.py -t hw/top_{topname}/data/top_{topname}.hjson "
+        "-o hw/top_{topname}/\n\n".format(topname=topname)
+    )
 
     hjson_gen_path = data_path / "padctrl.hjson"
 
     out = StringIO()
-    with tpl_path.open(mode='r', encoding='UTF-8') as fin:
+    with tpl_path.open(mode="r", encoding="UTF-8") as fin:
         hjson_tpl = Template(fin.read())
         try:
-            out = hjson_tpl.render(n_mio_pads=n_mio_pads,
-                                   n_dio_pads=n_dio_pads,
-                                   attr_dw=10)
+            out = hjson_tpl.render(
+                n_mio_pads=n_mio_pads, n_dio_pads=n_dio_pads, attr_dw=10
+            )
         except:  # noqa: E722
             log.error(exceptions.text_error_template().render())
         log.info("PADCTRL HJSON: %s" % out)
@@ -459,12 +473,12 @@ def generate_pinmux_and_padctrl(top, out_path):
         log.error("Cannot generate padctrl HJSON")
         return
 
-    with hjson_gen_path.open(mode='w', encoding='UTF-8') as fout:
+    with hjson_gen_path.open(mode="w", encoding="UTF-8") as fout:
         fout.write(genhdr + gencmd + out)
 
-    hjson_obj = hjson.loads(out,
-                            use_decimal=True,
-                            object_pairs_hook=validate.checking_dict)
+    hjson_obj = hjson.loads(
+        out, use_decimal=True, object_pairs_hook=validate.checking_dict
+    )
     validate.validate(hjson_obj)
     gen_rtl.gen_rtl(hjson_obj, str(rtl_path))
 
@@ -472,26 +486,26 @@ def generate_pinmux_and_padctrl(top, out_path):
 def generate_clkmgr(top, cfg_path, out_path):
 
     # Target paths
-    rtl_path = out_path / 'ip/clkmgr/rtl/autogen'
+    rtl_path = out_path / "ip/clkmgr/rtl/autogen"
     rtl_path.mkdir(parents=True, exist_ok=True)
-    data_path = out_path / 'ip/clkmgr/data/autogen'
+    data_path = out_path / "ip/clkmgr/data/autogen"
     data_path.mkdir(parents=True, exist_ok=True)
 
     # Template paths
-    hjson_tpl = cfg_path / '../ip/clkmgr/data/clkmgr.hjson.tpl'
-    rtl_tpl = cfg_path / '../ip/clkmgr/data/clkmgr.sv.tpl'
-    pkg_tpl = cfg_path / '../ip/clkmgr/data/clkmgr_pkg.sv.tpl'
+    hjson_tpl = cfg_path / "../ip/clkmgr/data/clkmgr.hjson.tpl"
+    rtl_tpl = cfg_path / "../ip/clkmgr/data/clkmgr.sv.tpl"
+    pkg_tpl = cfg_path / "../ip/clkmgr/data/clkmgr_pkg.sv.tpl"
 
-    hjson_out = data_path / 'clkmgr.hjson'
-    rtl_out = rtl_path / 'clkmgr.sv'
-    pkg_out = rtl_path / 'clkmgr_pkg.sv'
+    hjson_out = data_path / "clkmgr.hjson"
+    rtl_out = rtl_path / "clkmgr.sv"
+    pkg_out = rtl_path / "clkmgr_pkg.sv"
 
     tpls = [hjson_tpl, rtl_tpl, pkg_tpl]
     outputs = [hjson_out, rtl_out, pkg_out]
-    names = ['clkmgr.hjson', 'clkmgr.sv', 'clkmgr_pkg.sv']
+    names = ["clkmgr.hjson", "clkmgr.sv", "clkmgr_pkg.sv"]
 
     # clock classification
-    grps = top['clocks']['groups']
+    grps = top["clocks"]["groups"]
 
     ft_clks = OrderedDict()
     rg_clks = OrderedDict()
@@ -501,11 +515,11 @@ def generate_clkmgr(top, cfg_path, out_path):
 
     # construct a dictionary of the aon attribute for easier lookup
     # ie, src_name_A: True, src_name_B: False
-    for src in top['clocks']['srcs'] + top['clocks']['derived_srcs']:
-        if src['aon'] == 'yes':
-            src_aon_attr[src['name']] = True
+    for src in top["clocks"]["srcs"] + top["clocks"]["derived_srcs"]:
+        if src["aon"] == "yes":
+            src_aon_attr[src["name"]] = True
         else:
-            src_aon_attr[src['name']] = False
+            src_aon_attr[src["name"]] = False
 
     rg_srcs = [src for (src, attr) in src_aon_attr.items() if not attr]
 
@@ -514,47 +528,70 @@ def generate_clkmgr(top, cfg_path, out_path):
     # This includes two groups of clocks
     # Clocks fed from the always-on source
     # Clocks fed to the powerup group
-    ft_clks = OrderedDict([(clk, src) for grp in grps
-                           for (clk, src) in grp['clocks'].items()
-                           if src_aon_attr[src] or grp['name'] == 'powerup'])
+    ft_clks = OrderedDict(
+        [
+            (clk, src)
+            for grp in grps
+            for (clk, src) in grp["clocks"].items()
+            if src_aon_attr[src] or grp["name"] == "powerup"
+        ]
+    )
 
     # root-gate clocks
-    rg_clks = OrderedDict([(clk, src) for grp in grps
-                           for (clk, src) in grp['clocks'].items()
-                           if grp['name'] != 'powerup' and
-                           grp['sw_cg'] == 'no' and not src_aon_attr[src]])
+    rg_clks = OrderedDict(
+        [
+            (clk, src)
+            for grp in grps
+            for (clk, src) in grp["clocks"].items()
+            if grp["name"] != "powerup"
+            and grp["sw_cg"] == "no"
+            and not src_aon_attr[src]
+        ]
+    )
 
     # direct sw control clocks
-    sw_clks = OrderedDict([(clk, src) for grp in grps
-                           for (clk, src) in grp['clocks'].items()
-                           if grp['sw_cg'] == 'yes' and not src_aon_attr[src]])
+    sw_clks = OrderedDict(
+        [
+            (clk, src)
+            for grp in grps
+            for (clk, src) in grp["clocks"].items()
+            if grp["sw_cg"] == "yes" and not src_aon_attr[src]
+        ]
+    )
 
     # sw hint clocks
-    hints = OrderedDict([(clk, src) for grp in grps
-                         for (clk, src) in grp['clocks'].items()
-                         if grp['sw_cg'] == 'hint' and not src_aon_attr[src]])
+    hints = OrderedDict(
+        [
+            (clk, src)
+            for grp in grps
+            for (clk, src) in grp["clocks"].items()
+            if grp["sw_cg"] == "hint" and not src_aon_attr[src]
+        ]
+    )
 
     # hint clocks dict
     for clk, src in hints.items():
         # the clock is constructed as clk_{src_name}_{module_name}.
         # so to get the module name we split from the right and pick the last entry
         hint_clks[clk] = OrderedDict()
-        hint_clks[clk]['name'] = (clk.rsplit('_', 1)[-1])
-        hint_clks[clk]['src'] = src
+        hint_clks[clk]["name"] = clk.rsplit("_", 1)[-1]
+        hint_clks[clk]["src"] = src
 
     for idx, tpl in enumerate(tpls):
         out = ""
-        with tpl.open(mode='r', encoding='UTF-8') as fin:
+        with tpl.open(mode="r", encoding="UTF-8") as fin:
             tpl = Template(fin.read())
             try:
-                out = tpl.render(cfg=top,
-                                 div_srcs=top['clocks']['derived_srcs'],
-                                 rg_srcs=rg_srcs,
-                                 ft_clks=ft_clks,
-                                 rg_clks=rg_clks,
-                                 sw_clks=sw_clks,
-                                 export_clks=top['exported_clks'],
-                                 hint_clks=hint_clks)
+                out = tpl.render(
+                    cfg=top,
+                    div_srcs=top["clocks"]["derived_srcs"],
+                    rg_srcs=rg_srcs,
+                    ft_clks=ft_clks,
+                    rg_clks=rg_clks,
+                    sw_clks=sw_clks,
+                    export_clks=top["exported_clks"],
+                    hint_clks=hint_clks,
+                )
             except:  # noqa: E722
                 log.error(exceptions.text_error_template().render())
 
@@ -562,14 +599,12 @@ def generate_clkmgr(top, cfg_path, out_path):
             log.error("Cannot generate {}".format(names[idx]))
             return
 
-        with outputs[idx].open(mode='w', encoding='UTF-8') as fout:
+        with outputs[idx].open(mode="w", encoding="UTF-8") as fout:
             fout.write(genhdr + out)
 
     # Generate reg files
-    with open(str(hjson_out), 'r') as out:
-        hjson_obj = hjson.load(out,
-                               use_decimal=True,
-                               object_pairs_hook=OrderedDict)
+    with open(str(hjson_out), "r") as out:
+        hjson_obj = hjson.load(out, use_decimal=True, object_pairs_hook=OrderedDict)
     validate.validate(hjson_obj)
     gen_rtl.gen_rtl(hjson_obj, str(rtl_path))
 
@@ -588,22 +623,21 @@ def generate_pwrmgr(top, out_path):
 
     if n_wkups < 1:
         n_wkups = 1
-        log.warning(
-            "The design has no wakeup sources. Low power not supported")
+        log.warning("The design has no wakeup sources. Low power not supported")
 
     # Define target path
-    rtl_path = out_path / 'ip/pwrmgr/rtl/autogen'
+    rtl_path = out_path / "ip/pwrmgr/rtl/autogen"
     rtl_path.mkdir(parents=True, exist_ok=True)
-    doc_path = out_path / 'ip/pwrmgr/data/autogen'
+    doc_path = out_path / "ip/pwrmgr/data/autogen"
     doc_path.mkdir(parents=True, exist_ok=True)
 
     # So, read template files from ip directory.
-    tpl_path = Path(__file__).resolve().parent / '../hw/ip/pwrmgr/data'
-    hjson_tpl_path = tpl_path / 'pwrmgr.hjson.tpl'
+    tpl_path = Path(__file__).resolve().parent / "../hw/ip/pwrmgr/data"
+    hjson_tpl_path = tpl_path / "pwrmgr.hjson.tpl"
 
     # Render and write out hjson
     out = StringIO()
-    with hjson_tpl_path.open(mode='r', encoding='UTF-8') as fin:
+    with hjson_tpl_path.open(mode="r", encoding="UTF-8") as fin:
         hjson_tpl = Template(fin.read())
         try:
             out = hjson_tpl.render(NumWkups=n_wkups, NumRstReqs=n_rstreqs)
@@ -617,14 +651,12 @@ def generate_pwrmgr(top, out_path):
         return
 
     hjson_path = doc_path / "pwrmgr.hjson"
-    with hjson_path.open(mode='w', encoding='UTF-8') as fout:
+    with hjson_path.open(mode="w", encoding="UTF-8") as fout:
         fout.write(genhdr + out)
 
     # Generate reg files
-    with open(str(hjson_path), 'r') as out:
-        hjson_obj = hjson.load(out,
-                               use_decimal=True,
-                               object_pairs_hook=OrderedDict)
+    with open(str(hjson_path), "r") as out:
+        hjson_obj = hjson.load(out, use_decimal=True, object_pairs_hook=OrderedDict)
     validate.validate(hjson_obj)
     gen_rtl.gen_rtl(hjson_obj, str(rtl_path))
 
@@ -634,16 +666,16 @@ def generate_rstmgr(topcfg, out_path):
     log.info("Generating rstmgr")
 
     # Define target path
-    rtl_path = out_path / 'ip/rstmgr/rtl/autogen'
+    rtl_path = out_path / "ip/rstmgr/rtl/autogen"
     rtl_path.mkdir(parents=True, exist_ok=True)
-    doc_path = out_path / 'ip/rstmgr/data/autogen'
+    doc_path = out_path / "ip/rstmgr/data/autogen"
     doc_path.mkdir(parents=True, exist_ok=True)
-    tpl_path = Path(__file__).resolve().parent / '../hw/ip/rstmgr/data'
+    tpl_path = Path(__file__).resolve().parent / "../hw/ip/rstmgr/data"
 
     # Read template files from ip directory.
     tpls = []
     outputs = []
-    names = ['rstmgr.hjson', 'rstmgr.sv', 'rstmgr_pkg.sv']
+    names = ["rstmgr.hjson", "rstmgr.sv", "rstmgr_pkg.sv"]
 
     for x in names:
         tpls.append(tpl_path / Path(x + ".tpl"))
@@ -660,22 +692,19 @@ def generate_rstmgr(topcfg, out_path):
 
     # unique clocks
     for rst in topcfg["resets"]["nodes"]:
-        if rst['type'] != "ext" and rst['clk'] not in clks:
-            clks.append(rst['clk'])
+        if rst["type"] != "ext" and rst["clk"] not in clks:
+            clks.append(rst["clk"])
 
     # resets sent to reset struct
-    output_rsts = [
-        rst for rst in topcfg["resets"]["nodes"] if rst['type'] == "top"
-    ]
+    output_rsts = [rst for rst in topcfg["resets"]["nodes"] if rst["type"] == "top"]
 
     # sw controlled resets
     sw_rsts = [
-        rst for rst in topcfg["resets"]["nodes"]
-        if 'sw' in rst and rst['sw'] == 1
+        rst for rst in topcfg["resets"]["nodes"] if "sw" in rst and rst["sw"] == 1
     ]
 
     # leaf resets
-    leaf_rsts = [rst for rst in topcfg["resets"]["nodes"] if rst['gen']]
+    leaf_rsts = [rst for rst in topcfg["resets"]["nodes"] if rst["gen"]]
 
     log.info("output resets {}".format(output_rsts))
     log.info("software resets {}".format(sw_rsts))
@@ -687,16 +716,18 @@ def generate_rstmgr(topcfg, out_path):
     # Generate templated files
     for idx, t in enumerate(tpls):
         out = StringIO()
-        with t.open(mode='r', encoding='UTF-8') as fin:
+        with t.open(mode="r", encoding="UTF-8") as fin:
             tpl = Template(fin.read())
             try:
-                out = tpl.render(clks=clks,
-                                 power_domains=topcfg['power']['domains'],
-                                 num_rstreqs=n_rstreqs,
-                                 sw_rsts=sw_rsts,
-                                 output_rsts=output_rsts,
-                                 leaf_rsts=leaf_rsts,
-                                 export_rsts=topcfg['exported_rsts'])
+                out = tpl.render(
+                    clks=clks,
+                    power_domains=topcfg["power"]["domains"],
+                    num_rstreqs=n_rstreqs,
+                    sw_rsts=sw_rsts,
+                    output_rsts=output_rsts,
+                    leaf_rsts=leaf_rsts,
+                    export_rsts=topcfg["exported_rsts"],
+                )
 
             except:  # noqa: E722
                 log.error(exceptions.text_error_template().render())
@@ -705,15 +736,13 @@ def generate_rstmgr(topcfg, out_path):
             log.error("Cannot generate {}".format(names[idx]))
             return
 
-        with outputs[idx].open(mode='w', encoding='UTF-8') as fout:
+        with outputs[idx].open(mode="w", encoding="UTF-8") as fout:
             fout.write(genhdr + out)
 
     # Generate reg files
     hjson_path = outputs[0]
-    with open(str(hjson_path), 'r') as out:
-        hjson_obj = hjson.load(out,
-                               use_decimal=True,
-                               object_pairs_hook=OrderedDict)
+    with open(str(hjson_path), "r") as out:
+        hjson_obj = hjson.load(out, use_decimal=True, object_pairs_hook=OrderedDict)
     validate.validate(hjson_obj)
     gen_rtl.gen_rtl(hjson_obj, str(rtl_path))
 
@@ -723,16 +752,16 @@ def generate_flash(topcfg, out_path):
     log.info("Generating flash")
 
     # Define target path
-    rtl_path = out_path / 'ip/flash_ctrl/rtl/autogen'
+    rtl_path = out_path / "ip/flash_ctrl/rtl/autogen"
     rtl_path.mkdir(parents=True, exist_ok=True)
-    doc_path = out_path / 'ip/flash_ctrl/data/autogen'
+    doc_path = out_path / "ip/flash_ctrl/data/autogen"
     doc_path.mkdir(parents=True, exist_ok=True)
-    tpl_path = Path(__file__).resolve().parent / '../hw/ip/flash_ctrl/data'
+    tpl_path = Path(__file__).resolve().parent / "../hw/ip/flash_ctrl/data"
 
     # Read template files from ip directory.
     tpls = []
     outputs = []
-    names = ['flash_ctrl.hjson', 'flash_ctrl.sv', 'flash_ctrl_pkg.sv']
+    names = ["flash_ctrl.hjson", "flash_ctrl.sv", "flash_ctrl_pkg.sv"]
 
     for x in names:
         tpls.append(tpl_path / Path(x + ".tpl"))
@@ -742,7 +771,7 @@ def generate_flash(topcfg, out_path):
             outputs.append(rtl_path / Path(x))
 
     # Parameters needed for generation
-    flash_mems = [mem for mem in topcfg['memory'] if mem['type'] == 'eflash']
+    flash_mems = [mem for mem in topcfg["memory"] if mem["type"] == "eflash"]
     if len(flash_mems) > 1:
         log.error("This design does not currently support multiple flashes")
         return
@@ -752,7 +781,7 @@ def generate_flash(topcfg, out_path):
     # Generate templated files
     for idx, t in enumerate(tpls):
         out = StringIO()
-        with t.open(mode='r', encoding='UTF-8') as fin:
+        with t.open(mode="r", encoding="UTF-8") as fin:
             tpl = Template(fin.read())
             try:
                 out = tpl.render(cfg=cfg)
@@ -764,15 +793,13 @@ def generate_flash(topcfg, out_path):
             log.error("Cannot generate {}".format(names[idx]))
             return
 
-        with outputs[idx].open(mode='w', encoding='UTF-8') as fout:
+        with outputs[idx].open(mode="w", encoding="UTF-8") as fout:
             fout.write(genhdr + out)
 
     # Generate reg files
     hjson_path = outputs[0]
-    with open(str(hjson_path), 'r') as out:
-        hjson_obj = hjson.load(out,
-                               use_decimal=True,
-                               object_pairs_hook=OrderedDict)
+    with open(str(hjson_path), "r") as out:
+        hjson_obj = hjson.load(out, use_decimal=True, object_pairs_hook=OrderedDict)
     validate.validate(hjson_obj)
     gen_rtl.gen_rtl(hjson_obj, str(rtl_path))
 
@@ -781,18 +808,20 @@ def generate_top_only(top_only_list, out_path, topname):
     log.info("Generating top only modules")
 
     for ip in top_only_list:
-        hjson_path = Path(__file__).resolve(
-        ).parent / "../hw/top_{}/ip/{}/data/{}.hjson".format(topname, ip, ip)
+        hjson_path = Path(
+            __file__
+        ).resolve().parent / "../hw/top_{}/ip/{}/data/{}.hjson".format(topname, ip, ip)
         genrtl_dir = out_path / "ip/{}/rtl".format(ip)
         genrtl_dir.mkdir(parents=True, exist_ok=True)
-        log.info("Generating top modules {}, hjson: {}, output: {}".format(
-            ip, hjson_path, genrtl_dir))
+        log.info(
+            "Generating top modules {}, hjson: {}, output: {}".format(
+                ip, hjson_path, genrtl_dir
+            )
+        )
 
         # Generate reg files
-        with open(str(hjson_path), 'r') as out:
-            hjson_obj = hjson.load(out,
-                                   use_decimal=True,
-                                   object_pairs_hook=OrderedDict)
+        with open(str(hjson_path), "r") as out:
+            hjson_obj = hjson.load(out, use_decimal=True, object_pairs_hook=OrderedDict)
             validate.validate(hjson_obj)
             gen_rtl.gen_rtl(hjson_obj, str(genrtl_dir))
 
@@ -815,8 +844,9 @@ def generate_top_ral(top, ip_objs, out_path):
             mem.name = item["name"]
             mem.base_addr = int(item["base_addr"], 0)
             mem.limit_addr = int(item["base_addr"], 0) + int(item["size"], 0)
-            mem.byte_write = ('byte_write' in item and
-                              item["byte_write"].lower() == "true")
+            mem.byte_write = (
+                "byte_write" in item and item["byte_write"].lower() == "true"
+            )
             if "swaccess" in item.keys():
                 mem.dvrights = item["swaccess"]
             else:
@@ -840,68 +870,76 @@ def generate_top_ral(top, ip_objs, out_path):
 
 def main():
     parser = argparse.ArgumentParser(prog="topgen")
-    parser.add_argument('--topcfg',
-                        '-t',
-                        required=True,
-                        help="`top_{name}.hjson` file.")
     parser.add_argument(
-        '--tpl',
-        '-c',
-        help=
-        "The directory having top_{name}_core.sv.tpl and top_{name}.tpl.sv.")
+        "--topcfg", "-t", required=True, help="`top_{name}.hjson` file."
+    )
     parser.add_argument(
-        '--outdir',
-        '-o',
-        help='''Target TOP directory.
+        "--tpl",
+        "-c",
+        help="The directory having top_{name}_core.sv.tpl and top_{name}.tpl.sv.",
+    )
+    parser.add_argument(
+        "--outdir",
+        "-o",
+        help="""Target TOP directory.
              Module is created under rtl/. (default: dir(topcfg)/..)
-             ''')  # yapf: disable
-    parser.add_argument('--verbose', '-v', action='store_true', help="Verbose")
+             """,
+    )  # yapf: disable
+    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose")
 
     # Generator options: 'no' series. cannot combined with 'only' series
     parser.add_argument(
-        '--no-top',
-        action='store_true',
-        help="If defined, topgen doesn't generate top_{name} RTLs.")
+        "--no-top",
+        action="store_true",
+        help="If defined, topgen doesn't generate top_{name} RTLs.",
+    )
     parser.add_argument(
-        '--no-xbar',
-        action='store_true',
-        help="If defined, topgen doesn't generate crossbar RTLs.")
+        "--no-xbar",
+        action="store_true",
+        help="If defined, topgen doesn't generate crossbar RTLs.",
+    )
     parser.add_argument(
-        '--no-plic',
-        action='store_true',
-        help="If defined, topgen doesn't generate the interrup controller RTLs."
+        "--no-plic",
+        action="store_true",
+        help="If defined, topgen doesn't generate the interrup controller RTLs.",
     )
 
     # Generator options: 'only' series. cannot combined with 'no' series
     parser.add_argument(
-        '--top-only',
-        action='store_true',
-        help="If defined, the tool generates top RTL only")  # yapf:disable
+        "--top-only",
+        action="store_true",
+        help="If defined, the tool generates top RTL only",
+    )  # yapf:disable
     parser.add_argument(
-        '--xbar-only',
-        action='store_true',
-        help="If defined, the tool generates crossbar RTLs only")
+        "--xbar-only",
+        action="store_true",
+        help="If defined, the tool generates crossbar RTLs only",
+    )
     parser.add_argument(
-        '--plic-only',
-        action='store_true',
-        help="If defined, the tool generates RV_PLIC RTL and Hjson only")
+        "--plic-only",
+        action="store_true",
+        help="If defined, the tool generates RV_PLIC RTL and Hjson only",
+    )
     parser.add_argument(
-        '--alert-handler-only',
-        action='store_true',
-        help="If defined, the tool generates alert handler hjson only")
+        "--alert-handler-only",
+        action="store_true",
+        help="If defined, the tool generates alert handler hjson only",
+    )
     # Generator options: generate dv ral model
     parser.add_argument(
-        '--top_ral',
-        '-r',
+        "--top_ral",
+        "-r",
         default=False,
-        action='store_true',
-        help="If set, the tool generates top level RAL model for DV")
+        action="store_true",
+        help="If set, the tool generates top level RAL model for DV",
+    )
     # Generator options for compile time random netlist constants
     parser.add_argument(
-        '--rnd_cnst_seed',
+        "--rnd_cnst_seed",
         type=int,
-        metavar='<seed>',
-        help='Custom seed for RNG to compute netlist constants.')
+        metavar="<seed>",
+        help="Custom seed for RNG to compute netlist constants.",
+    )
 
     args = parser.parse_args()
 
@@ -909,17 +947,14 @@ def main():
     if args.top_ral:
         args.no_top = True
 
-    if (args.no_top or args.no_xbar or
-            args.no_plic) and (args.top_only or args.xbar_only or
-                               args.plic_only or args.alert_handler_only):
-        log.error(
-            "'no' series options cannot be used with 'only' series options")
+    if (args.no_top or args.no_xbar or args.no_plic) and (
+        args.top_only or args.xbar_only or args.plic_only or args.alert_handler_only
+    ):
+        log.error("'no' series options cannot be used with 'only' series options")
         raise SystemExit(sys.exc_info()[1])
 
-    if not (args.top_ral or args.plic_only or args.alert_handler_only or
-            args.tpl):
-        log.error(
-            "Template file can be omitted only if '--hjson-only' is true")
+    if not (args.top_ral or args.plic_only or args.alert_handler_only or args.tpl):
+        log.error("Template file can be omitted only if '--hjson-only' is true")
         raise SystemExit(sys.exc_info()[1])
 
     if args.verbose:
@@ -940,33 +975,33 @@ def main():
     cfg_path = Path(args.topcfg).parents[1]
 
     try:
-        with open(args.topcfg, 'r') as ftop:
-            topcfg = hjson.load(ftop,
-                                use_decimal=True,
-                                object_pairs_hook=OrderedDict)
+        with open(args.topcfg, "r") as ftop:
+            topcfg = hjson.load(ftop, use_decimal=True, object_pairs_hook=OrderedDict)
     except ValueError:
         raise SystemExit(sys.exc_info()[1])
 
     # Create generated list
     # These modules are generated through topgen
     generated_list = [
-        module['type'] for module in topcfg['module']
-        if 'generated' in module and module['generated'] == 'true'
+        module["type"]
+        for module in topcfg["module"]
+        if "generated" in module and module["generated"] == "true"
     ]
     log.info("Filtered list is {}".format(generated_list))
 
     # These modules are NOT generated but belong to a specific top
     # and therefore not part of "hw/ip"
     top_only_list = [
-        module['type'] for module in topcfg['module']
-        if 'top_only' in module and module['top_only'] == 'true'
+        module["type"]
+        for module in topcfg["module"]
+        if "top_only" in module and module["top_only"] == "true"
     ]
     log.info("Filtered list is {}".format(top_only_list))
 
     topname = topcfg["name"]
 
     # Sweep the IP directory and gather the config files
-    ip_dir = Path(__file__).parents[1] / 'hw/ip'
+    ip_dir = Path(__file__).parents[1] / "hw/ip"
     ips = search_ips(ip_dir)
 
     # exclude filtered IPs (to use top_${topname} one) and
@@ -989,12 +1024,10 @@ def main():
 
     for ip in generated_list:
         log.info("Appending {}".format(ip))
-        if ip == 'clkmgr':
-            ip_hjson = Path(out_path) / "ip/{}/data/autogen/{}.hjson".format(
-                ip, ip)
+        if ip == "clkmgr":
+            ip_hjson = Path(out_path) / "ip/{}/data/autogen/{}.hjson".format(ip, ip)
         else:
-            ip_hjson = hjson_dir.parent / "ip/{}/data/autogen/{}.hjson".format(
-                ip, ip)
+            ip_hjson = hjson_dir.parent / "ip/{}/data/autogen/{}.hjson".format(ip, ip)
         ips.append(ip_hjson)
 
     for ip in top_only_list:
@@ -1008,8 +1041,7 @@ def main():
         for x in ips:
             # Skip if it is not in the module list
             if x.stem not in [ip["type"] for ip in topcfg["module"]]:
-                log.info("Skip module %s as it isn't in the top module list" %
-                         x.stem)
+                log.info("Skip module %s as it isn't in the top module list" % x.stem)
                 continue
 
             # The auto-generated hjson might not yet exist. It will be created
@@ -1018,15 +1050,16 @@ def main():
             if x.stem in generated_list and not x.is_file():
                 hjson_file = ip_dir / "{}/data/{}.hjson".format(x.stem, x.stem)
                 log.info(
-                    "Auto-generated hjson %s does not yet exist. " % str(x) +
-                    "Falling back to template %s for initial validation." %
-                    str(hjson_file))
+                    "Auto-generated hjson %s does not yet exist. " % str(x)
+                    + "Falling back to template %s for initial validation."
+                    % str(hjson_file)
+                )
             else:
                 hjson_file = x
 
-            obj = hjson.load(hjson_file.open('r'),
-                             use_decimal=True,
-                             object_pairs_hook=OrderedDict)
+            obj = hjson.load(
+                hjson_file.open("r"), use_decimal=True, object_pairs_hook=OrderedDict
+            )
             if validate.validate(obj) != 0:
                 log.info("Parsing IP %s configuration failed. Skip" % x)
                 continue
@@ -1038,22 +1071,21 @@ def main():
     # Read the crossbars under the top directory
     xbar_objs = get_hjsonobj_xbars(hjson_dir)
 
-    log.info("Detected crossbars: %s" %
-             (", ".join([x["name"] for x in xbar_objs])))
+    log.info("Detected crossbars: %s" % (", ".join([x["name"] for x in xbar_objs])))
 
     # If specified, override the seed for random netlist constant computation.
     if args.rnd_cnst_seed:
-        log.warning('Commandline override of rnd_cnst_seed with {}.'.format(
-            args.rnd_cnst_seed))
-        topcfg['rnd_cnst_seed'] = args.rnd_cnst_seed
+        log.warning(
+            "Commandline override of rnd_cnst_seed with {}.".format(args.rnd_cnst_seed)
+        )
+        topcfg["rnd_cnst_seed"] = args.rnd_cnst_seed
     # Otherwise, we either take it from the top_{topname}.hjson if present, or
     # randomly generate a new seed if not.
     else:
         random.seed()
         new_seed = random.getrandbits(64)
-        if topcfg.setdefault('rnd_cnst_seed', new_seed) == new_seed:
-            log.warning(
-                'No rnd_cnst_seed specified, setting to {}.'.format(new_seed))
+        if topcfg.setdefault("rnd_cnst_seed", new_seed) == new_seed:
+            log.warning("No rnd_cnst_seed specified, setting to {}.".format(new_seed))
 
     topcfg, error = validate_top(topcfg, ip_objs, xbar_objs)
     if error != 0:
@@ -1066,9 +1098,7 @@ def main():
         sys.exit()
 
     # Generate PLIC
-    if not args.no_plic and \
-       not args.alert_handler_only and \
-       not args.xbar_only:
+    if not args.no_plic and not args.alert_handler_only and not args.xbar_only:
         generate_plic(completecfg, out_path)
         if args.plic_only:
             sys.exit()
@@ -1114,43 +1144,50 @@ def main():
     genhjson_path = genhjson_dir / ("top_%s.gen.hjson" % completecfg["name"])
 
     # Header for HJSON
-    gencmd = '''//
+    gencmd = """//
 // util/topgen.py -t hw/top_{topname}/data/top_{topname}.hjson \\
 //                -o hw/top_{topname}/ \\
 //                --hjson-only \\
 //                --rnd_cnst_seed {seed}
-'''.format(topname=topname, seed=completecfg['rnd_cnst_seed'])
+""".format(
+        topname=topname, seed=completecfg["rnd_cnst_seed"]
+    )
 
-    genhjson_path.write_text(genhdr + gencmd +
-                             hjson.dumps(completecfg, for_json=True))
+    genhjson_path.write_text(genhdr + gencmd + hjson.dumps(completecfg, for_json=True))
 
     if not args.no_top or args.top_only:
         tpl_path = Path(args.tpl)
 
         def render_template(out_name_tpl, out_dir, **other_info):
-            top_tplpath = tpl_path / ((out_name_tpl + '.tpl') % (top_name))
-            template_contents = generate_top(completecfg, str(top_tplpath),
-                                             **other_info)
+            top_tplpath = tpl_path / ((out_name_tpl + ".tpl") % (top_name))
+            template_contents = generate_top(
+                completecfg, str(top_tplpath), **other_info
+            )
 
             rendered_dir = out_path / out_dir
             rendered_dir.mkdir(parents=True, exist_ok=True)
             rendered_path = rendered_dir / (out_name_tpl % (top_name))
 
-            with rendered_path.open(mode='w', encoding='UTF-8') as fout:
+            with rendered_path.open(mode="w", encoding="UTF-8") as fout:
                 fout.write(template_contents)
 
             return rendered_path.resolve()
 
         # Header for SV files
-        gencmd = warnhdr + '''//
+        gencmd = (
+            warnhdr
+            + """//
 // util/topgen.py -t hw/top_{topname}/data/top_{topname}.hjson \\
 //                --tpl hw/top_{topname}/data/ \\
 //                -o hw/top_{topname}/ \\
 //                --rnd_cnst_seed {seed}
-'''.format(topname=topname, seed=topcfg['rnd_cnst_seed'])
+""".format(
+                topname=topname, seed=topcfg["rnd_cnst_seed"]
+            )
+        )
 
         # SystemVerilog Top:
-        render_template('top_%s.sv', 'rtl/autogen', gencmd=gencmd)
+        render_template("top_%s.sv", "rtl/autogen", gencmd=gencmd)
         # 'top_{topname}.sv.tpl' -> 'rtl/autogen/top_{topname}.sv'
 
         # The C / SV file needs some complex information, so we initialize this
@@ -1158,80 +1195,74 @@ def main():
         c_helper = TopGenC(completecfg)
 
         # 'top_{topname}_pkg.sv.tpl' -> 'rtl/autogen/top_{topname}_pkg.sv'
-        render_template('top_%s_pkg.sv',
-                        'rtl/autogen',
-                        helper=c_helper,
-                        gencmd=gencmd)
+        render_template("top_%s_pkg.sv", "rtl/autogen", helper=c_helper, gencmd=gencmd)
 
         # compile-time random netlist constants
-        render_template('top_%s_rnd_cnst_pkg.sv', 'rtl/autogen', gencmd=gencmd)
+        render_template("top_%s_rnd_cnst_pkg.sv", "rtl/autogen", gencmd=gencmd)
 
         # C Header + C File + Clang-format file
 
         # 'clang-format' -> 'sw/autogen/.clang-format'
-        cformat_tplpath = tpl_path / 'clang-format'
-        cformat_dir = out_path / 'sw/autogen'
+        cformat_tplpath = tpl_path / "clang-format"
+        cformat_dir = out_path / "sw/autogen"
         cformat_dir.mkdir(parents=True, exist_ok=True)
-        cformat_path = cformat_dir / '.clang-format'
+        cformat_path = cformat_dir / ".clang-format"
         cformat_path.write_text(cformat_tplpath.read_text())
 
         # 'top_{topname}.h.tpl' -> 'sw/autogen/top_{topname}.h'
-        cheader_path = render_template('top_%s.h',
-                                       'sw/autogen',
-                                       helper=c_helper)
+        cheader_path = render_template("top_%s.h", "sw/autogen", helper=c_helper)
 
         # Save the relative header path into `c_gen_info`
         rel_header_path = cheader_path.relative_to(SRCTREE_TOP)
         c_helper.header_path = str(rel_header_path)
 
         # 'top_{topname}.c.tpl' -> 'sw/autogen/top_{topname}.c'
-        render_template('top_%s.c', 'sw/autogen', helper=c_helper)
+        render_template("top_%s.c", "sw/autogen", helper=c_helper)
 
         # 'top_{topname}_memory.ld.tpl' -> 'sw/autogen/top_{topname}_memory.ld'
-        render_template('top_%s_memory.ld', 'sw/autogen')
+        render_template("top_%s_memory.ld", "sw/autogen")
 
         # 'top_{topname}_memory.h.tpl' -> 'sw/autogen/top_{topname}_memory.h'
-        memory_cheader_path = render_template('top_%s_memory.h', 'sw/autogen')
+        memory_cheader_path = render_template("top_%s_memory.h", "sw/autogen")
 
         # Fix the C header guards, which will have the wrong name
-        subprocess.run(["util/fix_include_guard.py",
-                        str(cheader_path),
-                        str(memory_cheader_path)],
-                       universal_newlines=True,
-                       stdout=subprocess.DEVNULL,
-                       stderr=subprocess.DEVNULL,
-                       check=True,
-                       cwd=str(SRCTREE_TOP))  # yapf: disable
+        subprocess.run(
+            ["util/fix_include_guard.py", str(cheader_path), str(memory_cheader_path)],
+            universal_newlines=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=True,
+            cwd=str(SRCTREE_TOP),
+        )  # yapf: disable
 
         # generate chip level xbar and alert_handler TB
         tb_files = [
-            "xbar_env_pkg__params.sv", "tb__xbar_connect.sv",
-            "tb__alert_handler_connect.sv"
+            "xbar_env_pkg__params.sv",
+            "tb__xbar_connect.sv",
+            "tb__alert_handler_connect.sv",
         ]
         for fname in tb_files:
             tpl_fname = "%s.tpl" % (fname)
             xbar_chip_data_path = tpl_path / tpl_fname
-            template_contents = generate_top(completecfg,
-                                             str(xbar_chip_data_path))
+            template_contents = generate_top(completecfg, str(xbar_chip_data_path))
 
-            rendered_dir = Path(out_path) / 'dv/autogen'
+            rendered_dir = Path(out_path) / "dv/autogen"
             rendered_dir.mkdir(parents=True, exist_ok=True)
             rendered_path = rendered_dir / fname
 
-            with rendered_path.open(mode='w', encoding='UTF-8') as fout:
+            with rendered_path.open(mode="w", encoding="UTF-8") as fout:
                 fout.write(template_contents)
 
         # generate chip level alert_handler pkg
-        tpl_fname = 'alert_handler_env_pkg__params.sv.tpl'
+        tpl_fname = "alert_handler_env_pkg__params.sv.tpl"
         alert_handler_chip_data_path = tpl_path / tpl_fname
-        template_contents = generate_top(completecfg,
-                                         str(alert_handler_chip_data_path))
+        template_contents = generate_top(completecfg, str(alert_handler_chip_data_path))
 
-        rendered_dir = Path(out_path) / 'dv/env/autogen'
+        rendered_dir = Path(out_path) / "dv/env/autogen"
         rendered_dir.mkdir(parents=True, exist_ok=True)
-        rendered_path = rendered_dir / 'alert_handler_env_pkg__params.sv'
+        rendered_path = rendered_dir / "alert_handler_env_pkg__params.sv"
 
-        with rendered_path.open(mode='w', encoding='UTF-8') as fout:
+        with rendered_path.open(mode="w", encoding="UTF-8") as fout:
             fout.write(template_contents)
 
 

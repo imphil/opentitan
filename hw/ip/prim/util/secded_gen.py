@@ -31,7 +31,7 @@ def min_paritysize(k):
     # SECDED --> Hamming distance 'd': 4
     # 2^(m-1) should cover (m+k)
     for m in range(2, 10):
-        if 2**m >= (k + m + 1):
+        if 2 ** m >= (k + m + 1):
             return m + 1
     return -1
 
@@ -64,15 +64,9 @@ def calc_fanin(width, codes):
     return fanins
 
 
-def print_comb(n,
-               k,
-               m,
-               cur_m,
-               codes,
-               start_cnt,
-               max_width=100,
-               prefix="",
-               first_indent=0):
+def print_comb(
+    n, k, m, cur_m, codes, start_cnt, max_width=100, prefix="", first_indent=0
+):
     """Print XOR comb.
 
     @param[max_width]    Maximum Width of str
@@ -103,7 +97,7 @@ def print_comb(n,
 
             if len(line) + temp_len > max_width:
                 outstr += line + "\n"
-                line = ' ' * (prepend_len - first_indent) + temp_str
+                line = " " * (prepend_len - first_indent) + temp_str
             else:
                 line += temp_str
     outstr += line + ";\n"
@@ -117,13 +111,14 @@ def print_enc(n, k, m, codes):
 
     for i in range(m):
         # Print parity computation
-        outstr += print_comb(n, k, m, i, codes, 0, 100,
-                             "  assign out[%d] =" % (i + k), 2)
+        outstr += print_comb(
+            n, k, m, i, codes, 0, 100, "  assign out[%d] =" % (i + k), 2
+        )
     return outstr
 
 
 def calc_syndrome(code):
-    return sum(map((lambda x: 2**x), code))
+    return sum(map((lambda x: 2 ** x), code))
 
 
 def print_dec(n, k, m, codes):
@@ -133,16 +128,28 @@ def print_dec(n, k, m, codes):
     outstr += "  // Syndrome calculation\n"
     for i in range(m):
         # Print combination
-        outstr += print_comb(n, k, m, i, codes, 1, 100,
-                             "  assign syndrome_o[%d] = in[%d] ^" % (i, k + i),
-                             len(" in[%d] ^" % (k + i)) + 2)
+        outstr += print_comb(
+            n,
+            k,
+            m,
+            i,
+            codes,
+            1,
+            100,
+            "  assign syndrome_o[%d] = in[%d] ^" % (i, k + i),
+            len(" in[%d] ^" % (k + i)) + 2,
+        )
 
     outstr += "\n"
     outstr += "  // Corrected output calculation\n"
     for i in range(k):
         synd_v = calc_syndrome(codes[i])
         outstr += "  assign d_o[%d] = (syndrome_o == %d'h%x) ^ in[%d];\n" % (
-            i, m, calc_syndrome(codes[i]), i)
+            i,
+            m,
+            calc_syndrome(codes[i]),
+            i,
+        )
     outstr += "\n"
     outstr += "  // err_o calc. bit0: single error, bit1: double error\n"
     outstr += "  assign single_error = ^syndrome_o;\n"
@@ -154,50 +161,48 @@ def print_dec(n, k, m, codes):
 def main():
     parser = argparse.ArgumentParser(
         prog="secded_gen",
-        description='''This tool generates Single Error Correction Double Error
+        description="""This tool generates Single Error Correction Double Error
         Detection(SECDED) encoder and decoder modules in SystemVerilog.
-        ''')
+        """,
+    )
     parser.add_argument(
-        '-m',
+        "-m",
         type=int,
         default=7,
-        help=
-        'parity length. If fan-in is too big, increasing m helps. (default: %(default)s)'
+        help="parity length. If fan-in is too big, increasing m helps. (default: %(default)s)",
     )
     parser.add_argument(
-        '-k',
+        "-k",
         type=int,
         default=32,
-        help=
-        'code length. Minimum \'m\' is calculated by the tool (default: %(default)s)'
+        help="code length. Minimum 'm' is calculated by the tool (default: %(default)s)",
     )
     parser.add_argument(
-        '--outdir',
-        default='../rtl',
-        help=
-        'output directory. The output file will be named `prim_secded_<n>_<k>_enc/dec.sv` (default: %(default)s)'
+        "--outdir",
+        default="../rtl",
+        help="output directory. The output file will be named `prim_secded_<n>_<k>_enc/dec.sv` (default: %(default)s)",
     )
-    parser.add_argument('--verbose', '-v', action='store_true', help='Verbose')
+    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose")
 
     args = parser.parse_args()
 
-    if (args.verbose):
+    if args.verbose:
         log.basicConfig(format="%(levelname)s: %(message)s", level=log.DEBUG)
     else:
         log.basicConfig(format="%(levelname)s: %(message)s")
 
     # Error checking
-    if (args.k <= 1 or args.k > 120):
+    if args.k <= 1 or args.k > 120:
         log.error("Current tool doesn't support the value k (%d)", args.k)
     k = args.k
 
-    if (args.m <= 1 or args.m > 20):
+    if args.m <= 1 or args.m > 20:
         log.error("Current tool doesn't support the value m (%d)", args.m)
 
     # Calculate 'm' (parity size)
     min_m = min_paritysize(k)
-    if (args.m < min_m):
-        log.error("given \'m\' argument is smaller than minimum requirement")
+    if args.m < min_m:
+        log.error("given 'm' argument is smaller than minimum requirement")
         m = min_m
     else:
         m = args.m
@@ -289,7 +294,7 @@ def main():
 
     # Print Encoder
     enc_out = print_enc(n, k, m, codes)
-    #log.info(enc_out)
+    # log.info(enc_out)
 
     module_name = "prim_secded_%d_%d" % (n, k)
 

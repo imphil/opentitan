@@ -37,16 +37,18 @@ def gen_fpv(obj, outdir):
 
 def gen_assertion(block, outdir):
     # Read Register templates
-    fpv_csr_tpl = Template(
-        filename=resource_filename('reggen', 'fpv_csr.sv.tpl'))
+    fpv_csr_tpl = Template(filename=resource_filename("reggen", "fpv_csr.sv.tpl"))
 
     # Generate pkg.sv with block name
-    with open(outdir + "/" + block.name + "_csr_assert_fpv.sv", 'w') as fout:
+    with open(outdir + "/" + block.name + "_csr_assert_fpv.sv", "w") as fout:
         try:
             fout.write(
-                fpv_csr_tpl.render(block=block,
-                                   HwAccess=HwAccess,
-                                   SwRdAccess=SwRdAccess,
-                                   SwWrAccess=SwWrAccess))
+                fpv_csr_tpl.render(
+                    block=block,
+                    HwAccess=HwAccess,
+                    SwRdAccess=SwRdAccess,
+                    SwWrAccess=SwWrAccess,
+                )
+            )
         except:
             log.error(exceptions.text_error_template().render())

@@ -13,48 +13,50 @@ class TraceWSR(Trace):
         self.new_value = new_value
 
     def trace(self) -> str:
-        return '{} = {:#x}'.format(self.wsr_name, self.new_value)
+        return "{} = {:#x}".format(self.wsr_name, self.new_value)
 
 
 class WSR:
-    '''Models a Wide Status Register'''
+    """Models a Wide Status Register"""
+
     def __init__(self, name: str):
         self.name = name
 
     def read_unsigned(self) -> int:
-        '''Get the stored value as a 256-bit unsigned value'''
+        """Get the stored value as a 256-bit unsigned value"""
         raise NotImplementedError()
 
     def write_unsigned(self, value: int) -> None:
-        '''Set the stored value as a 256-bit unsigned value'''
+        """Set the stored value as a 256-bit unsigned value"""
         raise NotImplementedError()
 
     def read_signed(self) -> int:
-        '''Get the stored value as a 256-bit signed value'''
+        """Get the stored value as a 256-bit signed value"""
         uval = self.read_unsigned()
         return uval - (1 << 256 if uval >> 255 else 0)
 
     def write_signed(self, value: int) -> None:
-        '''Set the stored value as a 256-bit signed value'''
+        """Set the stored value as a 256-bit signed value"""
         assert -(1 << 255) <= value < (1 << 255)
         uval = (1 << 256) + value if value < 0 else value
         self.write_unsigned(uval)
 
     def commit(self) -> None:
-        '''Commit pending changes'''
+        """Commit pending changes"""
         return
 
     def abort(self) -> None:
-        '''Abort pending changes'''
+        """Abort pending changes"""
         return
 
     def changes(self) -> List[TraceWSR]:
-        '''Return list of pending architectural changes'''
+        """Return list of pending architectural changes"""
         return []
 
 
 class DumbWSR(WSR):
-    '''Models a WSR without special behaviour'''
+    """Models a WSR without special behaviour"""
+
     def __init__(self, name: str):
         super().__init__(name)
         self._value = 0
@@ -76,13 +78,16 @@ class DumbWSR(WSR):
         self._next_value = None
 
     def changes(self) -> List[TraceWSR]:
-        return ([TraceWSR(self.name, self._next_value)]
-                if self._next_value is not None
-                else [])
+        return (
+            [TraceWSR(self.name, self._next_value)]
+            if self._next_value is not None
+            else []
+        )
 
 
 class RandWSR(WSR):
-    '''The magic RND WSR'''
+    """The magic RND WSR"""
+
     def __init__(self, name: str):
         super().__init__(name)
 
@@ -103,7 +108,7 @@ class RandWSR(WSR):
         return self._random_value
 
     def read_u32(self) -> int:
-        '''Read a 32-bit unsigned result'''
+        """Read a 32-bit unsigned result"""
         return self._random_value & ((1 << 32) - 1)
 
     def write_unsigned(self, value: int) -> None:
@@ -111,26 +116,23 @@ class RandWSR(WSR):
 
 
 class WSRFile:
-    '''A model of the WSR file'''
+    """A model of the WSR file"""
+
     def __init__(self) -> None:
-        self.MOD = DumbWSR('MOD')
-        self.RND = RandWSR('RND')
-        self.ACC = DumbWSR('ACC')
+        self.MOD = DumbWSR("MOD")
+        self.RND = RandWSR("RND")
+        self.ACC = DumbWSR("ACC")
 
     def _wsr_for_idx(self, idx: int) -> WSR:
         assert 0 <= idx <= 2
-        return {
-            0: self.MOD,
-            1: self.RND,
-            2: self.ACC
-        }[idx]
+        return {0: self.MOD, 1: self.RND, 2: self.ACC}[idx]
 
     def read_at_idx(self, idx: int) -> int:
-        '''Read the WSR at idx as an unsigned 256-bit value'''
+        """Read the WSR at idx as an unsigned 256-bit value"""
         return self._wsr_for_idx(idx).read_unsigned()
 
     def write_at_idx(self, idx: int, value: int) -> None:
-        '''Write the WSR at idx as an unsigned 256-bit value'''
+        """Write the WSR at idx as an unsigned 256-bit value"""
         return self._wsr_for_idx(idx).write_unsigned(value)
 
     def commit(self) -> None:

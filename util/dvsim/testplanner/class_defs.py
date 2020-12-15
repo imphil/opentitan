@@ -12,13 +12,14 @@ import mistletoe
 from tabulate import tabulate
 
 
-class TestplanEntry():
+class TestplanEntry:
     """An entry in the testplan
 
     A testplan entry has the following information: name of the planned test (testpoint),
     a brief description indicating intent, stimulus and checking procedure, targeted milestone
     and the list of actual developed tests.
     """
+
     name = ""
     desc = ""
     milestone = ""
@@ -37,35 +38,39 @@ class TestplanEntry():
 
     @staticmethod
     def is_valid_entry(kv_pairs):
-        '''Pass a list of key=value pairs to check if testplan entries can be extracted
+        """Pass a list of key=value pairs to check if testplan entries can be extracted
         from it.
-        '''
+        """
         for field in TestplanEntry.fields:
             if field not in kv_pairs.keys():
                 print(
                     "Error: input key-value pairs does not contain all of the ",
-                    "required fields to create an entry:\n", kv_pairs,
-                    "\nRequired fields:\n", TestplanEntry.fields)
+                    "required fields to create an entry:\n",
+                    kv_pairs,
+                    "\nRequired fields:\n",
+                    TestplanEntry.fields,
+                )
                 return False
             if type(kv_pairs[field]) is str and kv_pairs[field] == "":
-                print("Error: field \'", field, "\' is an empty string\n:",
-                      kv_pairs)
+                print("Error: field '", field, "' is an empty string\n:", kv_pairs)
                 return False
-            if field == "milestone" and kv_pairs[
-                    field] not in TestplanEntry.milestones:
-                print("Error: milestone \'", kv_pairs[field],
-                      "\' is invalid. Legal values:\n",
-                      TestplanEntry.milestones)
+            if field == "milestone" and kv_pairs[field] not in TestplanEntry.milestones:
+                print(
+                    "Error: milestone '",
+                    kv_pairs[field],
+                    "' is invalid. Legal values:\n",
+                    TestplanEntry.milestones,
+                )
                 return False
         return True
 
     def do_substitutions(self, substitutions):
-        '''Substitute {wildcards} in tests
+        """Substitute {wildcards} in tests
 
         If tests have {wildcards}, they are substituted with the 'correct' values using
         key=value pairs provided by the substitutions arg. If wildcards are present but no
         replacement is available, then the wildcards are replaced with an empty string.
-        '''
+        """
         if substitutions == []:
             return True
         for kv_pair in substitutions:
@@ -79,24 +84,27 @@ class TestplanEntry():
                         if item == k:
                             if type(v) is list:
                                 if v == []:
-                                    resolved_test = test.replace(
-                                        "{" + item + "}", "")
+                                    resolved_test = test.replace("{" + item + "}", "")
                                     resolved_tests.append(resolved_test)
                                 else:
                                     for subst_item in v:
                                         resolved_test = test.replace(
-                                            "{" + item + "}", subst_item)
+                                            "{" + item + "}", subst_item
+                                        )
                                         resolved_tests.append(resolved_test)
                             elif type(v) is str:
-                                resolved_test = test.replace(
-                                    "{" + item + "}", v)
+                                resolved_test = test.replace("{" + item + "}", v)
                                 resolved_tests.append(resolved_test)
                             else:
                                 print(
-                                    "Error: wildcard", item, "in test", test,
+                                    "Error: wildcard",
+                                    item,
+                                    "in test",
+                                    test,
                                     "has no viable",
                                     "replacement value (need str or list):\n",
-                                    kv_pair)
+                                    kv_pair,
+                                )
                                 return False
                 else:
                     resolved_tests.append(test)
@@ -116,14 +124,14 @@ class TestplanEntry():
         return True
 
     def map_regr_results(self, regr_results, map_full_testplan=True):
-        '''map regression results to tests in this entry
+        """map regression results to tests in this entry
 
         Given a list of regression results (a tuple containing {test name, # passing and
         # total} find if the name of the test in the results list matches the written tests
         in this testplan entry. If there is a match, then append the passing / total
         information. If no match is found, or if self.tests is an empty list, indicate 0/1
         passing so that it is factored into the final total.
-        '''
+        """
         test_results = []
         for test in self.tests:
             found = False
@@ -154,7 +162,7 @@ class TestplanEntry():
         print("tests: ", self.tests)
 
 
-class Testplan():
+class Testplan:
     """The full testplan
 
     This comprises of TestplanEntry entries
@@ -174,8 +182,7 @@ class Testplan():
             sys.exit(1)
 
     def entry_exists(self, entry):
-        '''check if new entry has the same name as one of the existing entries
-        '''
+        """check if new entry has the same name as one of the existing entries"""
         for existing_entry in self.entries:
             if entry.name == existing_entry.name:
                 print("Error: found a testplan entry with name = ", entry.name)
@@ -185,32 +192,25 @@ class Testplan():
         return False
 
     def add_entry(self, entry):
-        '''add a new entry into the testplan
-        '''
+        """add a new entry into the testplan"""
         if self.entry_exists(entry):
             sys.exit(1)
         self.entries.append(entry)
 
     def sort(self):
-        '''sort entries by milestone
-        '''
+        """sort entries by milestone"""
         self.entries = sorted(self.entries, key=lambda entry: entry.milestone)
 
     def map_regr_results(self, regr_results, map_full_testplan=True):
-        '''map regression results to testplan entries
-        '''
+        """map regression results to testplan entries"""
+
         def sum_results(totals, entry):
-            '''function to generate milestone and grand totals
-            '''
+            """function to generate milestone and grand totals"""
             ms = entry.milestone
             for test in entry.tests:
                 # Create dummy tests entry for milestone total
                 if totals[ms].tests == []:
-                    totals[ms].tests = [{
-                        "name": "**TOTAL**",
-                        "passing": 0,
-                        "total": 0
-                    }]
+                    totals[ms].tests = [{"name": "**TOTAL**", "passing": 0, "total": 0}]
                 # Sum milestone total
                 totals[ms].tests[0]["passing"] += test["passing"]
                 totals[ms].tests[0]["total"] += test["total"]
@@ -223,20 +223,17 @@ class Testplan():
         totals = {}
         # Create entry for total in each milestone; & the grand total.
         for ms in TestplanEntry.milestones:
-            totals[ms] = TestplanEntry(name="N.A.",
-                                       desc="Total tests",
-                                       milestone=ms,
-                                       tests=[{
-                                           "name": "**TOTAL**",
-                                           "passing": 0,
-                                           "total": 0
-                                       }])
+            totals[ms] = TestplanEntry(
+                name="N.A.",
+                desc="Total tests",
+                milestone=ms,
+                tests=[{"name": "**TOTAL**", "passing": 0, "total": 0}],
+            )
             if ms != "N.A.":
                 totals[ms].tests = []
 
         for entry in self.entries:
-            regr_results = entry.map_regr_results(regr_results,
-                                                  map_full_testplan)
+            regr_results = entry.map_regr_results(regr_results, map_full_testplan)
             totals = sum_results(totals, entry)
 
         # extract unmapped tests from regr_results and create 'unmapped' entry
@@ -250,7 +247,8 @@ class Testplan():
             desc="""A list of tests in the regression result that are not
                                       mapped to testplan entries.""",
             milestone="N.A.",
-            tests=unmapped_regr_results)
+            tests=unmapped_regr_results,
+        )
         totals = sum_results(totals, unmapped)
 
         # add total back into 'entries'
@@ -261,8 +259,7 @@ class Testplan():
         self.entries.append(totals["N.A."])
 
     def display(self):
-        '''display the complete testplan for debug
-        '''
+        """display the complete testplan for debug"""
         print("name: ", self.name)
         for entry in self.entries:
             entry.display()
@@ -291,9 +288,9 @@ class Testplan():
         return output
 
     def testplan_table(self, fmt="pipe"):
-        '''Generate testplan table from hjson entries in the format specified
+        """Generate testplan table from hjson entries in the format specified
         by the 'fmt' arg.
-        '''
+        """
         table = [["Milestone", "Name", "Description", "Tests"]]
         colalign = ("center", "center", "left", "left")
         for entry in self.entries:
@@ -304,22 +301,17 @@ class Testplan():
             if fmt == "html":
                 desc = mistletoe.markdown(desc)
             table.append([entry.milestone, entry.name, desc, tests])
-        result = tabulate(table,
-                          headers="firstrow",
-                          tablefmt=fmt,
-                          colalign=colalign)
+        result = tabulate(table, headers="firstrow", tablefmt=fmt, colalign=colalign)
         result = result.replace("&lt;", "<")
         result = result.replace("&gt;", ">")
         return result
 
     def results_table(self, regr_results, map_full_testplan=True, fmt="pipe"):
-        '''Print the mapped regression results into a table in the format
+        """Print the mapped regression results into a table in the format
         specified by the 'fmt' arg.
-        '''
+        """
         self.map_regr_results(regr_results, map_full_testplan)
-        table = [[
-            "Milestone", "Name", "Tests", "Passing", "Total", "Pass Rate"
-        ]]
+        table = [["Milestone", "Name", "Tests", "Passing", "Total", "Pass Rate"]]
         colalign = ("center", "center", "left", "center", "center", "center")
         for entry in self.entries:
             milestone = entry.milestone
@@ -334,10 +326,16 @@ class Testplan():
                 else:
                     pass_rate = test["passing"] / test["total"] * 100
                     pass_rate = "{0:.2f} %".format(round(pass_rate, 2))
-                table.append([
-                    milestone, entry_name, test["name"], test["passing"],
-                    test["total"], pass_rate
-                ])
+                table.append(
+                    [
+                        milestone,
+                        entry_name,
+                        test["name"],
+                        test["passing"],
+                        test["total"],
+                        pass_rate,
+                    ]
+                )
                 milestone = ""
                 entry_name = ""
                 if entry.milestone == "N.A." and entry.name == "N.A.":
@@ -346,8 +344,7 @@ class Testplan():
                     self.results_summary["Total"] = test["total"]
                     self.results_summary["Pass Rate"] = pass_rate
 
-        self.results = tabulate(table,
-                                headers="firstrow",
-                                tablefmt="pipe",
-                                colalign=colalign)
+        self.results = tabulate(
+            table, headers="firstrow", tablefmt="pipe", colalign=colalign
+        )
         return self.results

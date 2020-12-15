@@ -18,12 +18,13 @@ ERR_CODE_FATAL_REG = 0x82
 
 
 class Alert(Exception):
-    '''An exception raised to signal that the program did something wrong
+    """An exception raised to signal that the program did something wrong
 
     This maps onto alerts in the implementation. The err_code value is the
     value that should be written to the ERR_CODE external register.
 
-    '''
+    """
+
     # Subclasses should override this class field
     err_code = None  # type: Optional[int]
 
@@ -33,7 +34,7 @@ class Alert(Exception):
 
 
 class LoopError(Alert):
-    '''Raised when doing something wrong with a LOOP/LOOPI'''
+    """Raised when doing something wrong with a LOOP/LOOPI"""
 
     err_code = ERR_CODE_LOOP
 
@@ -41,4 +42,4 @@ class LoopError(Alert):
         self.what = what
 
     def __str__(self) -> str:
-        return 'Loop error: {}'.format(self.what)
+        return "Loop error: {}".format(self.what)

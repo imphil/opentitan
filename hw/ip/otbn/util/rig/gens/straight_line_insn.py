@@ -16,7 +16,8 @@ from ..snippet_gen import SnippetGen
 
 
 class StraightLineInsn(SnippetGen):
-    '''A super-simple snippet consisting of a single instruction'''
+    """A super-simple snippet consisting of a single instruction"""
+
     def __init__(self, insns_file: InsnsFile) -> None:
         # Find all the straight line, non-pseudo instructions in insns_file
         self.insns = []
@@ -31,15 +32,14 @@ class StraightLineInsn(SnippetGen):
 
             # Skip bn.sid and bn.movr (these have special "LSU behaviour" and
             # aren't yet implemented)
-            if insn.mnemonic in ['bn.sid', 'bn.movr']:
+            if insn.mnemonic in ["bn.sid", "bn.movr"]:
                 continue
 
             self.insns.append(insn)
 
-    def gen(self,
-            size: int,
-            model: Model,
-            program: Program) -> Optional[Tuple[Snippet, bool, int]]:
+    def gen(
+        self, size: int, model: Model, program: Program
+    ) -> Optional[Tuple[Snippet, bool, int]]:
 
         # Return None if this is the last instruction in the current gap
         # because we need to either jump or do an ECALL to avoid getting stuck.
@@ -83,7 +83,7 @@ class StraightLineInsn(SnippetGen):
         return (snippet, False, size - 1)
 
     def fill_insn(self, insn: Insn, model: Model) -> Optional[ProgInsn]:
-        '''Try to fill out an instruction
+        """Try to fill out an instruction
 
         This might fail if, for example, the model doesn't have enough
         registers with architectural values. In that case, return None.
@@ -92,7 +92,7 @@ class StraightLineInsn(SnippetGen):
         example, addi, which can always expand to "addi x0, x0, 0" (also known
         as nop).
 
-        '''
+        """
 
         # If this is not an LSU operation, or it is an LSU operation that
         # operates on CSR/WSRs, we can pick operands independently.
@@ -102,15 +102,13 @@ class StraightLineInsn(SnippetGen):
         # Special-case BN load/store instructions by mnemonic. These use
         # complicated indirect addressing, so it's probably more sensible to
         # give them special code.
-        if insn.mnemonic == 'bn.lid':
+        if insn.mnemonic == "bn.lid":
             return self._fill_bn_lid(insn, model)
 
         return self._fill_lsu_insn(insn, model)
 
-    def _fill_non_lsu_insn(self,
-                           insn: Insn,
-                           model: Model) -> Optional[ProgInsn]:
-        '''Fill out an instruction with no LSU component'''
+    def _fill_non_lsu_insn(self, insn: Insn, model: Model) -> Optional[ProgInsn]:
+        """Fill out an instruction with no LSU component"""
         assert insn.lsu is None
         # For each operand, pick a value that's allowed by the model (i.e.
         # one that won't trigger any undefined behaviour)
@@ -126,32 +124,36 @@ class StraightLineInsn(SnippetGen):
         return ProgInsn(insn, op_vals, None)
 
     def _fill_bn_lid(self, insn: Insn, model: Model) -> Optional[ProgInsn]:
-        '''Fill out a BN.LID instruction'''
-        assert insn.mnemonic == 'bn.lid'
+        """Fill out a BN.LID instruction"""
+        assert insn.mnemonic == "bn.lid"
         # bn.lid expects the operands: grd, grs1, offset, grs1_inc, grd_inc
         if len(insn.operands) != 5:
-            raise RuntimeError('Unexpected number of operands for bn.lid')
+            raise RuntimeError("Unexpected number of operands for bn.lid")
 
         grd, grs1, offset, grs1_inc, grd_inc = insn.operands
         exp_shape = (
             # grd
-            isinstance(grd.op_type, RegOperandType) and
-            grd.op_type.reg_type == 'gpr' and
-            not grd.op_type.is_dest() and
+            isinstance(grd.op_type, RegOperandType)
+            and grd.op_type.reg_type == "gpr"
+            and not grd.op_type.is_dest()
+            and
             # grs1
-            isinstance(grs1.op_type, RegOperandType) and
-            grs1.op_type.reg_type == 'gpr' and
-            not grs1.op_type.is_dest() and
+            isinstance(grs1.op_type, RegOperandType)
+            and grs1.op_type.reg_type == "gpr"
+            and not grs1.op_type.is_dest()
+            and
             # offset
-            isinstance(offset.op_type, ImmOperandType) and
-            offset.op_type.signed and
+            isinstance(offset.op_type, ImmOperandType)
+            and offset.op_type.signed
+            and
             # grs1_inc
-            isinstance(grs1_inc.op_type, OptionOperandType) and
+            isinstance(grs1_inc.op_type, OptionOperandType)
+            and
             # grd_inc
             isinstance(grd_inc.op_type, OptionOperandType)
         )
         if not exp_shape:
-            raise RuntimeError('Unexpected shape for bn.lid')
+            raise RuntimeError("Unexpected shape for bn.lid")
 
         # Assertions to guide mypy
         assert isinstance(offset.op_type, ImmOperandType)
@@ -159,7 +161,7 @@ class StraightLineInsn(SnippetGen):
         # bn.lid reads the bottom 5 bits of grd to get the index of the
         # destination WDR. So look at the registers with architectural values.
         # Since this is a destination register, we can safely pick anything.
-        known_regs = model.regs_with_known_vals('gpr')
+        known_regs = model.regs_with_known_vals("gpr")
         grd_idx, grd_val = random.choices(known_regs)[0]
 
         # Now pick the source register and offset. The range for offset
@@ -168,21 +170,18 @@ class StraightLineInsn(SnippetGen):
         offset_rng = offset.op_type.get_op_val_range(model.pc)
         assert offset_rng is not None
 
-        op_to_known_regs = {'grs1': known_regs}
-        tgt = model.pick_lsu_target('dmem',
-                                    True,
-                                    op_to_known_regs,
-                                    offset_rng,
-                                    offset.op_type.shift,
-                                    32)
+        op_to_known_regs = {"grs1": known_regs}
+        tgt = model.pick_lsu_target(
+            "dmem", True, op_to_known_regs, offset_rng, offset.op_type.shift, 32
+        )
         if tgt is None:
             return None
 
         addr, imm_val, reg_indices = tgt
         assert offset_rng[0] <= imm_val <= offset_rng[1]
 
-        assert list(reg_indices.keys()) == ['grs1']
-        grs1_val = reg_indices['grs1']
+        assert list(reg_indices.keys()) == ["grs1"]
+        grs1_val = reg_indices["grs1"]
 
         offset_val = offset.op_type.op_val_to_enc_val(imm_val, model.pc)
         assert offset_val is not None
@@ -200,10 +199,10 @@ class StraightLineInsn(SnippetGen):
             grd_inc_val = 1
 
         enc_vals = [grd_idx, grs1_val, offset_val, grs1_inc_val, grd_inc_val]
-        return ProgInsn(insn, enc_vals, ('dmem', addr))
+        return ProgInsn(insn, enc_vals, ("dmem", addr))
 
     def _fill_lsu_insn(self, insn: Insn, model: Model) -> Optional[ProgInsn]:
-        '''Fill out a generic load/store instruction'''
+        """Fill out a generic load/store instruction"""
         # If this is an LSU operation, then the target address is given by the
         # sum of one or more operands. For each of these operands with a
         # register type, we are going to need to look in the model to figure
@@ -221,19 +220,23 @@ class StraightLineInsn(SnippetGen):
             tgt_op = insn.name_to_operand[tgt_op_name]
             if isinstance(tgt_op.op_type, ImmOperandType):
                 if lsu_imm_op is not None:
-                    raise RuntimeError('Multiple immediate operands '
-                                       'contribute to target for instruction '
-                                       '{!r}. Not currently supported.'
-                                       .format(insn.mnemonic))
+                    raise RuntimeError(
+                        "Multiple immediate operands "
+                        "contribute to target for instruction "
+                        "{!r}. Not currently supported.".format(insn.mnemonic)
+                    )
                 lsu_imm_op = tgt_op_name
 
                 rng = tgt_op.op_type.get_op_val_range(model.pc)
                 if rng is None:
                     assert tgt_op.op_type.width is None
-                    raise RuntimeError('The {!r} immediate operand for the '
-                                       '{!r} instruction contributes to its '
-                                       'LSU target but has no width.'
-                                       .format(tgt_op_name, insn.mnemonic))
+                    raise RuntimeError(
+                        "The {!r} immediate operand for the "
+                        "{!r} instruction contributes to its "
+                        "LSU target but has no width.".format(
+                            tgt_op_name, insn.mnemonic
+                        )
+                    )
                 imm_op_range = rng
                 imm_op_shift = tgt_op.op_type.shift
                 continue
@@ -244,39 +247,45 @@ class StraightLineInsn(SnippetGen):
                 lsu_reg_types.add(reg_type)
                 continue
 
-            raise RuntimeError('Unknown operand type for {!r} operand of '
-                               '{!r} instruction: {}.'
-                               .format(tgt_op_name, insn.mnemonic,
-                                       type(tgt_op.op_type).__name__))
+            raise RuntimeError(
+                "Unknown operand type for {!r} operand of "
+                "{!r} instruction: {}.".format(
+                    tgt_op_name, insn.mnemonic, type(tgt_op.op_type).__name__
+                )
+            )
 
         # We have a list of register operands, together with their types. Get a
         # list of registers with known values for each register type we've seen.
-        known_regs_by_type = {rtype: model.regs_with_known_vals(rtype)
-                              for rtype in lsu_reg_types}
+        known_regs_by_type = {
+            rtype: model.regs_with_known_vals(rtype) for rtype in lsu_reg_types
+        }
 
         # And turn that into a dict keyed by operand name
-        op_to_known_regs = {op_name: known_regs_by_type[op_type]
-                            for op_name, op_type in lsu_reg_ops}
+        op_to_known_regs = {
+            op_name: known_regs_by_type[op_type] for op_name, op_type in lsu_reg_ops
+        }
 
         # Ask the model to try to find a target we can use. If this is a load
         # or a CSR operation, it will have to be an address that already has an
         # architectural value. If a store, it can be any address in range.
         lsu_type_to_info = {
-            'mem-load': ('dmem', True),
-            'mem-store': ('dmem', False),
-            'csr': ('csr', True),
-            'wsr-load': ('wsr', True),
-            'wsr-store': ('wsr', False)
+            "mem-load": ("dmem", True),
+            "mem-store": ("dmem", False),
+            "csr": ("csr", True),
+            "wsr-load": ("wsr", True),
+            "wsr-store": ("wsr", False),
         }
         assert set(lsu_type_to_info.keys()) == set(LSUDesc.TYPES)
         mem_type, loads_value = lsu_type_to_info[insn.lsu.lsu_type]
 
-        tgt = model.pick_lsu_target(mem_type,
-                                    loads_value,
-                                    op_to_known_regs,
-                                    imm_op_range,
-                                    imm_op_shift,
-                                    insn.lsu.idx_width)
+        tgt = model.pick_lsu_target(
+            mem_type,
+            loads_value,
+            op_to_known_regs,
+            imm_op_range,
+            imm_op_shift,
+            insn.lsu.idx_width,
+        )
         if tgt is None:
             return None
 

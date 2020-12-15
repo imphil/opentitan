@@ -17,20 +17,16 @@ def generate(xbar: Xbar, library_name: str = "ip") -> str:
     with prefix.
     """
 
-    xbar_rtl_tpl = Template(
-        filename=resource_filename('tlgen', 'xbar.rtl.sv.tpl'))
-    xbar_pkg_tpl = Template(
-        filename=resource_filename('tlgen', 'xbar.pkg.sv.tpl'))
-    xbar_core_tpl = Template(
-        filename=resource_filename('tlgen', 'xbar.core.tpl'))
-    xbar_hjson_tpl = Template(
-        filename=resource_filename('tlgen', 'xbar.hjson.tpl'))
+    xbar_rtl_tpl = Template(filename=resource_filename("tlgen", "xbar.rtl.sv.tpl"))
+    xbar_pkg_tpl = Template(filename=resource_filename("tlgen", "xbar.pkg.sv.tpl"))
+    xbar_core_tpl = Template(filename=resource_filename("tlgen", "xbar.core.tpl"))
+    xbar_hjson_tpl = Template(filename=resource_filename("tlgen", "xbar.hjson.tpl"))
     try:
         out_rtl = xbar_rtl_tpl.render(xbar=xbar, ntype=NodeType)
         out_pkg = xbar_pkg_tpl.render(xbar=xbar)
-        out_core = xbar_core_tpl.render(xbar=xbar,
-                                        ntype=NodeType,
-                                        library_name=library_name)
+        out_core = xbar_core_tpl.render(
+            xbar=xbar, ntype=NodeType, library_name=library_name
+        )
         out_hjson = xbar_hjson_tpl.render(xbar=xbar)
     except:  # noqa: E722
         log.error(exceptions.text_error_template().render())

@@ -40,35 +40,36 @@ def main():
         Further if the IP is comportable, this can be indicated using the -c
         switch, which causes the generator to add a bind statement for the CSR
         FPV assertions in the testbench.""",
-        add_help=True)
+        add_help=True,
+    )
     parser.add_argument(
-        'file',
+        "file",
         type=str,
         help="""Relative path to the SystemVerilog file of the module for which
         the code shall be generated. This can be a primitive or a comportable IP
-        (for which the -c switch should be set)."""
+        (for which the -c switch should be set).""",
     )
 
     parser.add_argument(
-        '-o',
-        '--outdir',
+        "-o",
+        "--outdir",
         type=str,
         default="",
         help="""Path where to place the testbench code. This is defaults to
         '../fpv' w.r.t. to the module path. For instance, if the module path is
         'hw/ip/mymod/rtl/mymod.sv', the FPV testbench would be generated under
-        hw/ip/mymod/fpv. """
+        hw/ip/mymod/fpv. """,
     )
     parser.add_argument(
-        '-c',
-        '--is_cip',
+        "-c",
+        "--is_cip",
         action="store_true",
         default=False,
         help="""Indicates whether this is a comportable IP. If yes, FPV
         assertions for the TL-UL interface and CSRs are automatically bound in
         the testbench. Note however that these CSR assertions need to be
-        generated separately using the regtool automation."""
-        )
+        generated separately using the regtool automation.""",
+    )
 
     args = parser.parse_args()
 
@@ -101,14 +102,24 @@ def main():
         dut.deps += ["lowrisc:ip:" + parentpath.stem]
 
     # define template files to iterate over
-    template_files = [(Path(__file__).parent.joinpath("fpvgen/fpv.sv.tpl"),                  \
-                       outpath.joinpath("tb").joinpath(mod_path.stem + "_fpv.sv")),          \
-                      (Path(__file__).parent.joinpath("fpvgen/bind_fpv.sv.tpl"),             \
-                        outpath.joinpath("tb").joinpath(mod_path.stem + "_bind_fpv.sv")),    \
-                      (Path(__file__).parent.joinpath("fpvgen/assert_fpv.sv.tpl"),           \
-                        outpath.joinpath("vip").joinpath(mod_path.stem + "_assert_fpv.sv")), \
-                      (Path(__file__).parent.joinpath("fpvgen/fusesoc.core.tpl"),            \
-                        outpath.joinpath(mod_path.stem + "_fpv.core"))]
+    template_files = [
+        (
+            Path(__file__).parent.joinpath("fpvgen/fpv.sv.tpl"),
+            outpath.joinpath("tb").joinpath(mod_path.stem + "_fpv.sv"),
+        ),
+        (
+            Path(__file__).parent.joinpath("fpvgen/bind_fpv.sv.tpl"),
+            outpath.joinpath("tb").joinpath(mod_path.stem + "_bind_fpv.sv"),
+        ),
+        (
+            Path(__file__).parent.joinpath("fpvgen/assert_fpv.sv.tpl"),
+            outpath.joinpath("vip").joinpath(mod_path.stem + "_assert_fpv.sv"),
+        ),
+        (
+            Path(__file__).parent.joinpath("fpvgen/fusesoc.core.tpl"),
+            outpath.joinpath(mod_path.stem + "_fpv.core"),
+        ),
+    ]
 
     for (tpl_file, out_file) in template_files:
         print("Generating %s" % str(out_file))

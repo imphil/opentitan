@@ -4,14 +4,14 @@
 
 
 class Trace:
-    '''An object that can cause a trace entry'''
+    """An object that can cause a trace entry"""
 
     def trace(self) -> str:
-        '''Return a representation of the entry for tracing
+        """Return a representation of the entry for tracing
 
         This is used by things like the standalone ISS with -v
 
-        '''
+        """
         raise NotImplementedError()
 
 

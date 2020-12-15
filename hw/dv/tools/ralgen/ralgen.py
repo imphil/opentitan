@@ -45,13 +45,15 @@ def main():
     util_path = os.path.abspath(os.path.join(self_path, REPO_ROOT, "util"))
 
     # Retrieve the parameters from the yml.
-    root_dir = gapi['files_root']
-    name = gapi['parameters'].get('name')
-    ip_hjson = gapi['parameters'].get('ip_hjson')
-    top_hjson = gapi['parameters'].get('top_hjson')
+    root_dir = gapi["files_root"]
+    name = gapi["parameters"].get("name")
+    ip_hjson = gapi["parameters"].get("ip_hjson")
+    top_hjson = gapi["parameters"].get("top_hjson")
     if not name or (bool(ip_hjson) == bool(top_hjson)):
-        print("Error: ralgen requires the \"name\" and exactly one of "
-              "{\"ip_hjson\" and \"top_hjson\"} parameters to be set.")
+        print(
+            'Error: ralgen requires the "name" and exactly one of '
+            '{"ip_hjson" and "top_hjson"} parameters to be set.'
+        )
         sys.exit(1)
 
     # Generate the RAL pkg.
@@ -74,36 +76,38 @@ def main():
 
     # Generate the FuseSoc core file.
     ral_pkg_core_text = {
-        'name': "lowrisc:dv:{}_ral_pkg".format(name),
-        'filesets': {
-            'files_dv': {
-                'depend': [
+        "name": "lowrisc:dv:{}_ral_pkg".format(name),
+        "filesets": {
+            "files_dv": {
+                "depend": [
                     "lowrisc:dv:dv_base_reg",
                 ],
-                'files': [
+                "files": [
                     ral_pkg_file,
                 ],
-                'file_type': 'systemVerilogSource'
+                "file_type": "systemVerilogSource",
             },
         },
-        'targets': {
-            'default': {
-                'filesets': [
-                    'files_dv',
+        "targets": {
+            "default": {
+                "filesets": [
+                    "files_dv",
                 ],
             },
         },
     }
     ral_pkg_core_file = os.path.abspath(name + "_ral_pkg.core")
-    with open(ral_pkg_core_file, 'w') as f:
+    with open(ral_pkg_core_file, "w") as f:
         f.write("CAPI=2:\n")
-        yaml.dump(ral_pkg_core_text,
-                  f,
-                  encoding="utf-8",
-                  default_flow_style=False,
-                  sort_keys=False)
+        yaml.dump(
+            ral_pkg_core_text,
+            f,
+            encoding="utf-8",
+            default_flow_style=False,
+            sort_keys=False,
+        )
     print("RAL core file written to {}".format(ral_pkg_core_file))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

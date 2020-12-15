@@ -15,11 +15,10 @@ from .snippet_gens import SnippetGens
 from .snippet import Snippet
 
 
-def gen_program(start_addr: int,
-                size: int,
-                insns_file: InsnsFile) -> Tuple[Dict[int, int],
-                                                List[Snippet]]:
-    '''Generate a random program for OTBN
+def gen_program(
+    start_addr: int, size: int, insns_file: InsnsFile
+) -> Tuple[Dict[int, int], List[Snippet]]:
+    """Generate a random program for OTBN
 
     start_addr is the reset address (the value that should be programmed into
     the START_ADDR register). size gives a rough upper bound for the number of
@@ -30,14 +29,14 @@ def gen_program(start_addr: int,
     starting the program. snippets is a list of instruction snippets. program
     is the generated program (from flattening them both).
 
-    '''
+    """
 
     # Find the size of the memory that we can access. Both memories start
     # at address 0: a strict Harvard architecture. (mems[x][0] is the LMA
     # for memory x, not the VMA)
     mems = get_memory_layout()
-    imem_lma, imem_size = mems['IMEM']
-    dmem_lma, dmem_size = mems['DMEM']
+    imem_lma, imem_size = mems["IMEM"]
+    dmem_lma, dmem_size = mems["DMEM"]
 
     assert start_addr <= imem_size - 4
     assert start_addr & 3 == 0
@@ -50,7 +49,7 @@ def gen_program(start_addr: int,
     # Tell the model that we've done so.
     init_data = gen_init_data(dmem_size)
     for addr in init_data.keys():
-        model.touch_mem('dmem', addr, 4)
+        model.touch_mem("dmem", addr, 4)
 
     generators = SnippetGens(insns_file)
     snippets = []
@@ -70,13 +69,13 @@ def gen_program(start_addr: int,
 
 
 def snippets_to_program(snippets: List[Snippet]) -> Program:
-    '''Write a series of disjoint snippets to make a program'''
+    """Write a series of disjoint snippets to make a program"""
     # Find the size of the memory that we can access. Both memories start
     # at address 0: a strict Harvard architecture. (mems[x][0] is the LMA
     # for memory x, not the VMA)
     mems = get_memory_layout()
-    imem_lma, imem_size = mems['IMEM']
-    dmem_lma, dmem_size = mems['DMEM']
+    imem_lma, imem_size = mems["IMEM"]
+    dmem_lma, dmem_size = mems["DMEM"]
     program = Program(imem_lma, imem_size, dmem_lma, dmem_size)
 
     for snippet in snippets:

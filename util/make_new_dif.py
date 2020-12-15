@@ -36,42 +36,47 @@ ALL_PARTS = ["header", "checklist"]
 
 
 def main():
-    dif_dir = REPO_TOP / 'sw/device/lib/dif'
+    dif_dir = REPO_TOP / "sw/device/lib/dif"
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--ip',
-                        '-i',
-                        required=True,
-                        help='the short name of the IP, in snake_case')
-    parser.add_argument('--peripheral',
-                        '-p',
-                        required=True,
-                        help='the documentation-friendly name of the IP')
     parser.add_argument(
-        '--handle-param',
-        '-a',
-        default='handle',
-        help='an optional name to replace the `handle` parameter name')
-    parser.add_argument('--only',
-                        choices=['all'] + ALL_PARTS,
-                        default=[],
-                        action='append',
-                        help='only create some files; defaults to all.')
-    parser.add_argument('--output',
-                        '-o',
-                        type=Path,
-                        default=dif_dir,
-                        help='directory to place the output files into.')
+        "--ip", "-i", required=True, help="the short name of the IP, in snake_case"
+    )
+    parser.add_argument(
+        "--peripheral",
+        "-p",
+        required=True,
+        help="the documentation-friendly name of the IP",
+    )
+    parser.add_argument(
+        "--handle-param",
+        "-a",
+        default="handle",
+        help="an optional name to replace the `handle` parameter name",
+    )
+    parser.add_argument(
+        "--only",
+        choices=["all"] + ALL_PARTS,
+        default=[],
+        action="append",
+        help="only create some files; defaults to all.",
+    )
+    parser.add_argument(
+        "--output",
+        "-o",
+        type=Path,
+        default=dif_dir,
+        help="directory to place the output files into.",
+    )
     args = parser.parse_args()
 
-
     if len(args.only) == 0:
-        args.only += ['all']
-    if 'all' in args.only:
+        args.only += ["all"]
+    if "all" in args.only:
         args.only += ALL_PARTS
 
     ip_snake = args.ip
-    ip_camel = ''.join([word.capitalize() for word in args.ip.split('_')])
+    ip_camel = "".join([word.capitalize() for word in args.ip.split("_")])
     ip_upper = ip_snake.upper()
     periph_lower = args.peripheral
     # We just want to set the first character to title case. In particular,
@@ -84,13 +89,13 @@ def main():
         args.output.mkdir(exist_ok=True)
 
     if "header" in args.only:
-        header_template_file = args.output / 'dif_template.h.tpl'
+        header_template_file = args.output / "dif_template.h.tpl"
 
-        with header_template_file.open('r') as f:
+        with header_template_file.open("r") as f:
             header_template = Template(f.read())
 
-        header_out_file = dif_dir / 'dif_{}.h'.format(ip_snake)
-        with header_out_file.open('w') as f:
+        header_out_file = dif_dir / "dif_{}.h".format(ip_snake)
+        with header_out_file.open("w") as f:
             f.write(
                 header_template.render(
                     ip_snake=ip_snake,
@@ -99,29 +104,31 @@ def main():
                     periph_lower=periph_lower,
                     periph_upper=periph_upper,
                     handle=handle,
-                ))
+                )
+            )
 
-        print('DIF header successfully written to {}.'.format(
-            str(header_out_file)))
+        print("DIF header successfully written to {}.".format(str(header_out_file)))
 
     if "checklist" in args.only:
-        checklist_template_file = REPO_TOP / 'doc/project/sw_checklist.md.tpl'
+        checklist_template_file = REPO_TOP / "doc/project/sw_checklist.md.tpl"
 
-        with checklist_template_file.open('r') as f:
+        with checklist_template_file.open("r") as f:
             markdown_template = Template(f.read())
 
-        checklist_out_file = args.output / 'dif_{}.md'.format(ip_snake)
-        with checklist_out_file.open('w') as f:
+        checklist_out_file = args.output / "dif_{}.md".format(ip_snake)
+        with checklist_out_file.open("w") as f:
             f.write(
                 markdown_template.render(
                     ip_name=ip_snake,
                     dif_name=ip_snake,
                     display_name=periph_upper,
-                ))
+                )
+            )
 
-        print('DIF Checklist successfully written to {}.'.format(
-            str(checklist_out_file)))
+        print(
+            "DIF Checklist successfully written to {}.".format(str(checklist_out_file))
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

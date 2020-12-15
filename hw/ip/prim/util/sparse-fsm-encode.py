@@ -56,25 +56,25 @@ RUST_INSTRUCTIONS = """
 
 
 def _wrapped_docstring():
-    '''Return a text-wrapped version of the module docstring'''
+    """Return a text-wrapped version of the module docstring"""
     paras = []
     para = []
-    for line in __doc__.strip().split('\n'):
+    for line in __doc__.strip().split("\n"):
         line = line.strip()
         if not line:
             if para:
-                paras.append('\n'.join(para))
+                paras.append("\n".join(para))
                 para = []
         else:
             para.append(line)
     if para:
-        paras.append('\n'.join(para))
+        paras.append("\n".join(para))
 
-    return '\n\n'.join(textwrap.fill(p) for p in paras)
+    return "\n\n".join(textwrap.fill(p) for p in paras)
 
 
 def _hist_to_bars(hist, m):
-    '''Convert histogramm list into ASCII bar plot'''
+    """Convert histogramm list into ASCII bar plot"""
     bars = []
     for i, j in enumerate(hist):
         bar_prefix = "{:2}: ".format(i)
@@ -88,68 +88,73 @@ def _hist_to_bars(hist, m):
 
 
 def main():
-    logging.basicConfig(level=logging.INFO,
-                        format="%(asctime)s - %(message)s",
-                        datefmt="%Y-%m-%d %H:%M")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s - %(message)s", datefmt="%Y-%m-%d %H:%M"
+    )
 
     parser = argparse.ArgumentParser(
         prog="sparse-fsm-encode",
         description=_wrapped_docstring(),
-        formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-d',
-                        type=int,
-                        default=5,
-                        metavar='<minimum HD>',
-                        help='Minimum Hamming distance between encoded states.')
-    parser.add_argument('-m',
-                        type=int,
-                        default=7,
-                        metavar='<#states>',
-                        help='Number of states to encode.')
-    parser.add_argument('-n',
-                        type=int,
-                        default=10,
-                        metavar='<#nbits>',
-                        help='Encoding length [bit].')
-    parser.add_argument('-s',
-                        type=int,
-                        metavar='<seed>',
-                        help='Custom seed for RNG.')
-    parser.add_argument('--language',
-                        choices=['sv', 'c', 'rust'],
-                        default='sv',
-                        help='Choose the language of the generated enum.')
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "-d",
+        type=int,
+        default=5,
+        metavar="<minimum HD>",
+        help="Minimum Hamming distance between encoded states.",
+    )
+    parser.add_argument(
+        "-m",
+        type=int,
+        default=7,
+        metavar="<#states>",
+        help="Number of states to encode.",
+    )
+    parser.add_argument(
+        "-n", type=int, default=10, metavar="<#nbits>", help="Encoding length [bit]."
+    )
+    parser.add_argument("-s", type=int, metavar="<seed>", help="Custom seed for RNG.")
+    parser.add_argument(
+        "--language",
+        choices=["sv", "c", "rust"],
+        default="sv",
+        help="Choose the language of the generated enum.",
+    )
 
     args = parser.parse_args()
 
-    if args.language in ['c', 'rust']:
+    if args.language in ["c", "rust"]:
         if args.n not in [8, 16, 32]:
-            logging.error("When using C or Rust, widths must be a power-of-two "
-                          "at least a byte (8 bits) wide. You chose %d." % (args.n,))
+            logging.error(
+                "When using C or Rust, widths must be a power-of-two "
+                "at least a byte (8 bits) wide. You chose %d." % (args.n,)
+            )
             sys.exit(1)
 
-    if args.m > 2**args.n:
+    if args.m > 2 ** args.n:
         logging.error(
-            'Statespace 2^%d not large enough to accommodate %d states.' %
-            (args.n, args.m))
+            "Statespace 2^%d not large enough to accommodate %d states."
+            % (args.n, args.m)
+        )
         sys.exit(1)
 
     if args.d >= args.n:
         logging.error(
-            'State is only %d bits wide, which is not enough to fulfill a '
-            'minimum Hamming distance constraint of %d. ' %
-            (args.n, args.d))
+            "State is only %d bits wide, which is not enough to fulfill a "
+            "minimum Hamming distance constraint of %d. " % (args.n, args.d)
+        )
         sys.exit(1)
 
     if args.d <= 0:
-        logging.error(
-            'Hamming distance must be > 0.')
+        logging.error("Hamming distance must be > 0.")
         sys.exit(1)
 
     if args.d < 3:
         logging.warning(
-            'A value of 4-5 is recommended for the minimum Hamming distance '
-            'constraint. At a minimum, this should be set to 3.')
+            "A value of 4-5 is recommended for the minimum Hamming distance "
+            "constraint. At a minimum, this should be set to 3."
+        )
 
     # If no seed has been provided, we choose a seed and print it
     # into the generated output later on such that this run can be
@@ -181,26 +186,28 @@ def main():
         # if we restarted for too many times, abort.
         if num_restarts >= MAX_RESTARTS:
             logging.error(
-                'Did not find a solution after restarting {} times. This is '
-                'an indicator that not many (or even no) solutions exist for '
-                'the current parameterization. Rerun the script and/or adjust '
-                'the d/m/n parameters. E.g. make the state space more sparse by '
-                'increasing n, or lower the minimum Hamming distance threshold d.'
-                .format(num_restarts))
+                "Did not find a solution after restarting {} times. This is "
+                "an indicator that not many (or even no) solutions exist for "
+                "the current parameterization. Rerun the script and/or adjust "
+                "the d/m/n parameters. E.g. make the state space more sparse by "
+                "increasing n, or lower the minimum Hamming distance threshold d.".format(
+                    num_restarts
+                )
+            )
             sys.exit(1)
         num_draws += 1
         # draw a candidate and check whether it fulfills the minimum
         # distance requirement with respect to other encodings.
         c = random.getrandbits(args.n)
         # disallow all-zero and all-one states
-        pop_cnt = bin(c).count('1')
+        pop_cnt = bin(c).count("1")
         if pop_cnt < args.n and pop_cnt > 0:
             for k in encodings:
                 # disallow candidates that are the complement of other states
                 if c == ~k:
                     break
                 # disallow candidates that are too close to other states
-                if bin(c ^ k).count('1') < args.d:
+                if bin(c ^ k).count("1") < args.d:
                     break
             else:
                 encodings.append(c)
@@ -211,8 +218,8 @@ def main():
     hist = [0] * (args.n + 1)
     for i, j in enumerate(encodings):
         if i < len(encodings) - 1:
-            for k in encodings[i + 1:]:
-                dist = bin(j ^ k).count('1')
+            for k in encodings[i + 1 :]:
+                dist = bin(j ^ k).count("1")
                 hist[dist] += 1
                 minimum = min(dist, minimum)
                 maximum = max(dist, maximum)
@@ -227,15 +234,18 @@ def main():
             "//      -s {} --language=sv\n"
             "//\n"
             "// Hamming distance histogram:\n"
-            "//".format(args.d, args.m, args.n, args.s))
+            "//".format(args.d, args.m, args.n, args.s)
+        )
         for bar in _hist_to_bars(hist, args.m):
-            print('// ' + bar)
-        print("//\n"
-              "// Minimum Hamming distance: {}\n"
-              "// Maximum Hamming distance: {}\n"
-              "//\n"
-              "localparam int StateWidth = {};\n"
-              "typedef enum logic [StateWidth-1:0] {{".format(minimum, maximum, args.n))
+            print("// " + bar)
+        print(
+            "//\n"
+            "// Minimum Hamming distance: {}\n"
+            "// Maximum Hamming distance: {}\n"
+            "//\n"
+            "localparam int StateWidth = {};\n"
+            "typedef enum logic [StateWidth-1:0] {{".format(minimum, maximum, args.n)
+        )
         fmt_str = "  State{0:} {1:}= {2:}'b{3:0" + str(args.n) + "b}"
         state_str = ""
         for j, k in enumerate(encodings):
@@ -247,7 +257,8 @@ def main():
             state_str += "    State{}: ;\n".format(j)
 
         # print FSM template
-        print('''}} state_e;
+        print(
+            """}} state_e;
 
 state_e state_d, state_q;
 
@@ -273,24 +284,31 @@ prim_flop #(
   .d_i ( state_d     ),
   .q_o ( state_raw_q )
 );
-'''.format(state_str))
+""".format(
+                state_str
+            )
+        )
 
     elif args.language == "c":
         print(C_INSTRUCTIONS)
-        print("/*\n"
-              " * Encoding generated with\n"
-              " * $ ./sparse-fsm-encode.py -d {} -m {} -n {} \\\n"
-              " *     -s {} --language=c\n"
-              " *\n"
-              " * Hamming distance histogram:\n"
-              " *".format(args.d, args.m, args.n, args.s))
+        print(
+            "/*\n"
+            " * Encoding generated with\n"
+            " * $ ./sparse-fsm-encode.py -d {} -m {} -n {} \\\n"
+            " *     -s {} --language=c\n"
+            " *\n"
+            " * Hamming distance histogram:\n"
+            " *".format(args.d, args.m, args.n, args.s)
+        )
         for hist_bar in bars:
             print(" * " + hist_bar)
-        print(" *\n"
-              " * Minimum Hamming distance: {}\n"
-              " * Maximum Hamming distance: {}\n"
-              " */\n"
-              "typedef enum my_state {{".format(minimum, maximum))
+        print(
+            " *\n"
+            " * Minimum Hamming distance: {}\n"
+            " * Maximum Hamming distance: {}\n"
+            " */\n"
+            "typedef enum my_state {{".format(minimum, maximum)
+        )
         fmt_str = "  kMyState{0:} {1:}= 0x{3:0" + str(math.ceil(args.n / 4)) + "x}"
         for j, k in enumerate(encodings):
             pad = ""
@@ -300,27 +318,35 @@ prim_flop #(
 
         # print FSM template
         print("} my_state_t;")
-    elif args.language == 'rust':
+    elif args.language == "rust":
         print(RUST_INSTRUCTIONS)
-        print("///```text\n"
-              "/// Encoding generated with\n"
-              "/// $ ./sparse-fsm-encode.py -d {} -m {} -n {} \\\n"
-              "///     -s {} --language=rust\n"
-              "///\n"
-              "/// Hamming distance histogram:\n"
-              "///".format(args.d, args.m, args.n, args.s))
+        print(
+            "///```text\n"
+            "/// Encoding generated with\n"
+            "/// $ ./sparse-fsm-encode.py -d {} -m {} -n {} \\\n"
+            "///     -s {} --language=rust\n"
+            "///\n"
+            "/// Hamming distance histogram:\n"
+            "///".format(args.d, args.m, args.n, args.s)
+        )
         for hist_bar in bars:
             print("/// " + hist_bar)
-        print("///\n"
-              "/// Minimum Hamming distance: {}\n"
-              "/// Maximum Hamming distance: {}\n"
-              "///```\n"
-              "#[derive(Clone,Copy,Eq,PartialEq,Ord,ParitalOrd,Hash,Debug)]\n"
-              "#[repr(transparent)]\n"
-              "struct MyState(u{});\n"
-              "\n"
-              "impl MyState {{".format(minimum, maximum, args.n))
-        fmt_str = "  const MY_STATE{0:}: MyState {1:}= MyState(0x{3:0" + str(math.ceil(args.n / 4)) + "x})"
+        print(
+            "///\n"
+            "/// Minimum Hamming distance: {}\n"
+            "/// Maximum Hamming distance: {}\n"
+            "///```\n"
+            "#[derive(Clone,Copy,Eq,PartialEq,Ord,ParitalOrd,Hash,Debug)]\n"
+            "#[repr(transparent)]\n"
+            "struct MyState(u{});\n"
+            "\n"
+            "impl MyState {{".format(minimum, maximum, args.n)
+        )
+        fmt_str = (
+            "  const MY_STATE{0:}: MyState {1:}= MyState(0x{3:0"
+            + str(math.ceil(args.n / 4))
+            + "x})"
+        )
         for j, k in enumerate(encodings):
             pad = ""
             for i in range(len(str(args.m)) - len(str(j))):

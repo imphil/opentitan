@@ -12,9 +12,9 @@ from sim.sim import OTBNSim
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument('elf')
-    parser.add_argument('-v', '--verbose', action='store_true')
-    parser.add_argument('--dmem-dump')
+    parser.add_argument("elf")
+    parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument("--dmem-dump")
 
     args = parser.parse_args()
 
@@ -27,11 +27,12 @@ def main() -> int:
 
     if args.dmem_dump is not None:
         try:
-            with open(args.dmem_dump, 'wb') as dmem_file:
+            with open(args.dmem_dump, "wb") as dmem_file:
                 dmem_file.write(sim.dump_data())
         except OSError as err:
-            sys.stderr.write('Failed to write DMEM to {!r}: {}.'
-                             .format(args.dmem_dump, err))
+            sys.stderr.write(
+                "Failed to write DMEM to {!r}: {}.".format(args.dmem_dump, err)
+            )
             return 1
 
     return 0

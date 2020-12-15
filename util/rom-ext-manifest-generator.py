@@ -75,22 +75,29 @@ class MemoryOffset(object):
 
 
 def generate_defines(fields, verbose=False):
-    """ Generates manifest defines.
+    """Generates manifest defines.
 
     This produces two lists of tuples. One with a field name and the
     `MemoryRegion` object, and one with `MemoryOffset` object. Please see the
     description at the top for more information on the differences between these
     objects.
     """
+
     def print_field_info(name, offset, size, alignment, required_alignment):
         if verbose:
-            print("0x{:04x} - 0x{:04x}: {} (alignment: {} reqd: {})".format(
-                offset, offset + size, name, alignment, required_alignment))
+            print(
+                "0x{:04x} - 0x{:04x}: {} (alignment: {} reqd: {})".format(
+                    offset, offset + size, name, alignment, required_alignment
+                )
+            )
 
     def print_offset_info(name, offset, alignment, required_alignment):
         if verbose:
-            print("       @ 0x{:04x}: {} (alignment: {} reqd: {})".format(
-                offset, name, alignment, required_alignment))
+            print(
+                "       @ 0x{:04x}: {} (alignment: {} reqd: {})".format(
+                    offset, name, alignment, required_alignment
+                )
+            )
 
     base_name = Name.from_snake_case("ROM_EXT")
 
@@ -105,43 +112,57 @@ def generate_defines(fields, verbose=False):
         # The 8-byte two-step https://zinascii.com/2014/the-8-byte-two-step.html
         # This ends up aligning `new_offset_bytes` to `required_alignment_bytes`
         # that is greater than or equal to `current_offset_bytes`.
-        new_offset_bytes = (current_offset_bytes + required_alignment_bytes - 1) \
-            & ~(required_alignment_bytes - 1)
+        new_offset_bytes = (current_offset_bytes + required_alignment_bytes - 1) & ~(
+            required_alignment_bytes - 1
+        )
 
         if new_offset_bytes != current_offset_bytes and verbose:
-            print("0x{:04x} - 0x{:04x}: - (realignment) -".format(
-                current_offset_bytes, new_offset_bytes))
+            print(
+                "0x{:04x} - 0x{:04x}: - (realignment) -".format(
+                    current_offset_bytes, new_offset_bytes
+                )
+            )
 
         current_offset_bytes = new_offset_bytes
         # This works becuase e.g. 6 is `0b0...00110` and ~(6-1) is `0b1..11010`,
         # giving a result of `0b0...010`, or 2.
-        current_offset_alignment = current_offset_bytes \
-            & ~(current_offset_bytes - 1)
+        current_offset_alignment = current_offset_bytes & ~(current_offset_bytes - 1)
 
-        if field['type'] == "offset":
-            offset_name = base_name + Name.from_snake_case(field['name'])
+        if field["type"] == "offset":
+            offset_name = base_name + Name.from_snake_case(field["name"])
             offset = MemoryOffset(offset_name, current_offset_bytes)
-            offsets.append((field['name'], offset))
+            offsets.append((field["name"], offset))
 
-            print_offset_info(field['name'], current_offset_bytes,
-                              current_offset_alignment,
-                              required_alignment_bytes)
+            print_offset_info(
+                field["name"],
+                current_offset_bytes,
+                current_offset_alignment,
+                required_alignment_bytes,
+            )
 
         else:
-            assert field['size'] % 8 == 0
-            size_bytes = field['size'] // 8
-            if field['type'] == "field":
-                region_name = base_name + Name.from_snake_case(field['name'])
-                region = MemoryRegion(region_name, current_offset_bytes,
-                                      size_bytes)
-                regions.append((field['name'], region))
+            assert field["size"] % 8 == 0
+            size_bytes = field["size"] // 8
+            if field["type"] == "field":
+                region_name = base_name + Name.from_snake_case(field["name"])
+                region = MemoryRegion(region_name, current_offset_bytes, size_bytes)
+                regions.append((field["name"], region))
 
-                print_field_info(field['name'], current_offset_bytes,
-                                 size_bytes, current_offset_alignment,
-                                 required_alignment_bytes)
-            elif field['type'] == 'reserved' and verbose:
-                print_field_info('- reserved -', current_offset_bytes,
-                                 size_bytes, current_offset_alignment, 0)
+                print_field_info(
+                    field["name"],
+                    current_offset_bytes,
+                    size_bytes,
+                    current_offset_alignment,
+                    required_alignment_bytes,
+                )
+            elif field["type"] == "reserved" and verbose:
+                print_field_info(
+                    "- reserved -",
+                    current_offset_bytes,
+                    size_bytes,
+                    current_offset_alignment,
+                    0,
+                )
 
             current_offset_bytes += size_bytes
 
@@ -156,18 +177,18 @@ def generate_cheader(regions, offsets, input_dir, output_dir):
     `output_dir`.
     """
 
-    template_path = input_dir / 'manifest.h.tpl'
-    output_path = output_dir / 'manifest.h'
+    template_path = input_dir / "manifest.h.tpl"
+    output_path = output_dir / "manifest.h"
 
-    with template_path.open('r') as f:
+    with template_path.open("r") as f:
         template = Template(f.read())
 
     header = template.render(regions=regions, offsets=offsets)
 
-    with output_path.open('w') as f:
+    with output_path.open("w") as f:
         f.write(header)
 
-    print('C header sucessfuly written to {}.'.format(output_path))
+    print("C header sucessfuly written to {}.".format(output_path))
 
 
 def generate_rust_header(regions, offsets, input_dir, output_dir):
@@ -178,18 +199,18 @@ def generate_rust_header(regions, offsets, input_dir, output_dir):
     `output_dir`.
     """
 
-    template_path = input_dir / 'manifest.rs.tpl'
-    output_path = output_dir / 'manifest.rs'
+    template_path = input_dir / "manifest.rs.tpl"
+    output_path = output_dir / "manifest.rs"
 
-    with template_path.open('r') as f:
+    with template_path.open("r") as f:
         template = Template(f.read())
 
     header = template.render(regions=regions, offsets=offsets)
 
-    with output_path.open('w') as f:
+    with output_path.open("w") as f:
         f.write(header)
 
-    print('Rust module sucessfuly written to {}.'.format(output_path))
+    print("Rust module sucessfuly written to {}.".format(output_path))
 
 
 def generate_format_description(regions, output_dir):
@@ -202,7 +223,7 @@ def generate_format_description(regions, output_dir):
     [1]: https://github.com/luismartingarcia/protocol
     """
 
-    output_path = output_dir / 'manifest.txt'
+    output_path = output_dir / "manifest.txt"
 
     truncate_length = 16  # bytes
     bits_in_byte = 8
@@ -221,18 +242,23 @@ def generate_format_description(regions, output_dir):
 
         # Pad with a reserved field to get to new offset
         if new_offset != current_offset:
-            verbose_regions.append("- reserved -:{}".format(
-                (new_offset - current_offset) * bits_in_byte))
+            verbose_regions.append(
+                "- reserved -:{}".format((new_offset - current_offset) * bits_in_byte)
+            )
 
         current_offset = new_offset
 
         # Add a (potentially truncated) field
         if mem_region.size_bytes > truncate_length:
             # We only allow truncated regions at 4-byte offsets.
-            assert (current_offset % 4 == 0)
-            verbose_regions.append("{} ({} bits):{}".format(
-                name, mem_region.size_bytes * bits_in_byte,
-                truncate_length * bits_in_byte))
+            assert current_offset % 4 == 0
+            verbose_regions.append(
+                "{} ({} bits):{}".format(
+                    name,
+                    mem_region.size_bytes * bits_in_byte,
+                    truncate_length * bits_in_byte,
+                )
+            )
 
             # Save some information so we know where to insert the `~~ break ~~` line.
             data_line = (current_offset - current_truncation_delta) // 4
@@ -240,37 +266,40 @@ def generate_format_description(regions, output_dir):
             current_truncation_delta += mem_region.size_bytes - truncate_length
 
         else:
-            verbose_regions.append("{}:{}".format(
-                name, mem_region.size_bytes * bits_in_byte))
+            verbose_regions.append(
+                "{}:{}".format(name, mem_region.size_bytes * bits_in_byte)
+            )
 
         current_offset = new_offset + mem_region.size_bytes
 
     # Add a field for the image itself:
-    verbose_regions.append("code image:{}".format(truncate_length *
-                                                  bits_in_byte))
+    verbose_regions.append("code image:{}".format(truncate_length * bits_in_byte))
     truncation_lines.append((current_offset - current_truncation_delta) // 4)
 
     protocol_input = ",".join(verbose_regions)
     protocol_result = subprocess.run(
         ["protocol", "--bits", "32", protocol_input],
         universal_newlines=True,
-        capture_output=True)
+        capture_output=True,
+    )
     protocol_output = protocol_result.stdout
 
-    truncation_mark = "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  break  ~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"
+    truncation_mark = (
+        "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  break  ~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"
+    )
     # The formula here depends on the output of `protocol`. The idea is to
     # replace a line *after* the label with `truncation_mark`, preferrably a
     # line that otherwise would denote the space between adjacent words.
     visual_truncations = [line * 2 + 8 for line in truncation_lines]
 
-    with output_path.open('w') as f:
+    with output_path.open("w") as f:
         for idx, line in enumerate(protocol_output.splitlines(keepends=True)):
             if idx in visual_truncations:
                 f.write(truncation_mark)
             else:
                 f.write(line)
 
-    print('Format description successfully written to {}.'.format(output_path))
+    print("Format description successfully written to {}.".format(output_path))
 
 
 def main():
@@ -279,43 +308,49 @@ def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         usage=USAGE,
-        description=DESC)
+        description=DESC,
+    )
 
-    parser.add_argument('-v',
-                        '--verbose',
-                        action='store_true',
-                        default=False,
-                        help='Print Extra Information.')
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        default=False,
+        help="Print Extra Information.",
+    )
 
-    parser.add_argument('--input-dir',
-                        required=True,
-                        type=Path,
-                        help='Manifest hjson and template directory.')
+    parser.add_argument(
+        "--input-dir",
+        required=True,
+        type=Path,
+        help="Manifest hjson and template directory.",
+    )
 
-    parser.add_argument('--output-dir',
-                        required=True,
-                        type=Path,
-                        help='Manifest file output directory.')
+    parser.add_argument(
+        "--output-dir", required=True, type=Path, help="Manifest file output directory."
+    )
 
-    parser.add_argument('--output-files',
-                        choices=['all'] + ALL_PARTS,
-                        default=[],
-                        action='append',
-                        help='The type of files to be produced.')
+    parser.add_argument(
+        "--output-files",
+        choices=["all"] + ALL_PARTS,
+        default=[],
+        action="append",
+        help="The type of files to be produced.",
+    )
 
     args = parser.parse_args()
 
-    manifest_hjson_file = args.input_dir / 'manifest.hjson'
+    manifest_hjson_file = args.input_dir / "manifest.hjson"
 
-    with manifest_hjson_file.open('r') as hjson_file:
+    with manifest_hjson_file.open("r") as hjson_file:
         obj = hjson.loads(hjson_file.read())
 
     if len(args.output_files) == 0:
-        args.output_files += ['all']
-    if 'all' in args.output_files:
+        args.output_files += ["all"]
+    if "all" in args.output_files:
         args.output_files += ALL_PARTS
 
-    regions, offsets = generate_defines(obj['fields'], args.verbose)
+    regions, offsets = generate_defines(obj["fields"], args.verbose)
 
     if "c" in args.output_files:
         generate_cheader(regions, offsets, args.input_dir, args.output_dir)
@@ -327,5 +362,5 @@ def main():
         generate_format_description(regions, args.output_dir)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

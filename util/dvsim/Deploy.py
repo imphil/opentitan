@@ -18,7 +18,7 @@ from tabulate import tabulate
 from utils import VERBOSE, find_and_substitute_wildcards, run_cmd
 
 
-class Deploy():
+class Deploy:
     """
     Abstraction for deploying builds and runs.
     """
@@ -60,7 +60,7 @@ class Deploy():
         return self.__self_str__()
 
     def __init__(self, sim_cfg):
-        '''Initialize common class members.'''
+        """Initialize common class members."""
 
         # Cross ref the whole cfg object for ease.
         self.sim_cfg = sim_cfg
@@ -104,15 +104,16 @@ class Deploy():
             "build_mode": False,
             "flow_makefile": False,
             "exports": False,
-            "dry_run": False
+            "dry_run": False,
         }
 
     # Function to parse a dict and extract the mandatory cmd and misc attrs.
     def parse_dict(self, ddict):
         if not hasattr(self, "target"):
             log.error(
-                "Class %s does not have the mandatory attribute \"target\" defined",
-                self.__class__.__name__)
+                'Class %s does not have the mandatory attribute "target" defined',
+                self.__class__.__name__,
+            )
             sys.exit(1)
 
         ddict_keys = ddict.keys()
@@ -132,26 +133,25 @@ class Deploy():
         # Ensure all mandatory attrs are set
         for attr in self.mandatory_cmd_attrs.keys():
             if self.mandatory_cmd_attrs[attr] is False:
-                log.error("Attribute \"%s\" not found for \"%s\".", attr,
-                          self.name)
+                log.error('Attribute "%s" not found for "%s".', attr, self.name)
                 sys.exit(1)
 
         for attr in self.mandatory_misc_attrs.keys():
             if self.mandatory_misc_attrs[attr] is False:
-                log.error("Attribute \"%s\" not found for \"%s\".", attr,
-                          self.name)
+                log.error('Attribute "%s" not found for "%s".', attr, self.name)
                 sys.exit(1)
 
         # Recursively search and replace wildcards
         # First pass: search within self dict. We ignore errors since some
         # substitions may be available in the second pass.
-        self.__dict__ = find_and_substitute_wildcards(self.__dict__,
-                                                      self.__dict__, [], True)
+        self.__dict__ = find_and_substitute_wildcards(
+            self.__dict__, self.__dict__, [], True
+        )
 
         # Second pass: search in sim_cfg dict, this time not ignoring errors.
-        self.__dict__ = find_and_substitute_wildcards(self.__dict__,
-                                                      self.sim_cfg.__dict__,
-                                                      [], False)
+        self.__dict__ = find_and_substitute_wildcards(
+            self.__dict__, self.sim_cfg.__dict__, [], False
+        )
 
         # Set identifier.
         self.identifier = self.sim_cfg.name + ":" + self.name
@@ -169,7 +169,7 @@ class Deploy():
         self.cmd = self.construct_cmd()
 
     def _process_exports(self):
-        '''Convert 'exports' as a list of dicts in the HJson to a dict.
+        """Convert 'exports' as a list of dicts in the HJson to a dict.
 
         Exports is a list of key-value pairs that are to be exported to the
         subprocess' environment so that the tools can lookup those options.
@@ -177,18 +177,19 @@ class Deploy():
         HJson member cannot be an object). This method converts a list of dicts
         into a dict variable, which makes it easy to merge the list of exports
         with the subprocess' env where the ASIC tool is invoked.
-        '''
+        """
         exports_dict = {}
         if self.exports:
             try:
                 exports_dict = {
-                    k: str(v)
-                    for item in self.exports for k, v in item.items()
+                    k: str(v) for item in self.exports for k, v in item.items()
                 }
             except ValueError as e:
                 log.error(
-                    "%s: exports: \'%s\' Exports key must be a list of dicts!",
-                    e, str(self.exports))
+                    "%s: exports: '%s' Exports key must be a list of dicts!",
+                    e,
+                    str(self.exports),
+                )
                 sys.exit(1)
         self.exports = exports_dict
 
@@ -210,14 +211,14 @@ class Deploy():
                 value = int(value)
             if type(value) is str:
                 value = value.strip()
-            cmd += " " + attr + "=\"" + str(value) + "\""
+            cmd += " " + attr + '="' + str(value) + '"'
 
         # TODO: If not running locally, redirect stdout and err to the log file
         # self.cmd += " > " + self.log + " 2>&1 &"
         return cmd
 
     def is_equivalent_job(self, item):
-        '''Checks if job that would be dispatched with `item` is equivalent to
+        """Checks if job that would be dispatched with `item` is equivalent to
         `self`.
 
         Determines if `item` and `self` would behave exactly the same way when
@@ -225,7 +226,7 @@ class Deploy():
         choose to discard `item` and pick `self` instead. To do so, we check
         the final resolved `cmd` & the exports. The `name` field will be unique
         to `item` and `self`, so we take that out of the comparison.
-        '''
+        """
         if type(self) != type(item):
             return False
 
@@ -246,8 +247,7 @@ class Deploy():
             if val != item_val:
                 return False
 
-        log.log(VERBOSE, "Deploy job \"%s\" is equivalent to \"%s\"",
-                item.name, self.name)
+        log.log(VERBOSE, 'Deploy job "%s" is equivalent to "%s"', item.name, self.name)
         return True
 
     def dispatch_cmd(self):
@@ -261,8 +261,8 @@ class Deploy():
         # level to the next. Here, self.cmd is a call to Make but it's
         # logically a top-level invocation: we don't want to pollute the flow's
         # Makefile with Make variables from any wrapper that called dvsim.
-        if 'MAKEFLAGS' in exports:
-            del exports['MAKEFLAGS']
+        if "MAKEFLAGS" in exports:
+            del exports["MAKEFLAGS"]
 
         args = shlex.split(self.cmd)
         try:
@@ -271,35 +271,42 @@ class Deploy():
                 self.odir_limiter(odir=self.odir)
             os.system("mkdir -p " + self.odir)
             # Dump all env variables for ease of debug.
-            with open(self.odir + "/env_vars",
-                      "w",
-                      encoding="UTF-8",
-                      errors="surrogateescape") as f:
+            with open(
+                self.odir + "/env_vars", "w", encoding="UTF-8", errors="surrogateescape"
+            ) as f:
                 for var in sorted(exports.keys()):
                     f.write("{}={}\n".format(var, exports[var]))
                 f.close()
-            os.system("ln -s " + self.odir + " " + self.sim_cfg.links['D'] +
-                      '/' + self.odir_ln)
+            os.system(
+                "ln -s "
+                + self.odir
+                + " "
+                + self.sim_cfg.links["D"]
+                + "/"
+                + self.odir_ln
+            )
             f = open(self.log, "w", encoding="UTF-8", errors="surrogateescape")
             f.write("[Executing]:\n{}\n\n".format(self.cmd))
             f.flush()
-            self.process = subprocess.Popen(args,
-                                            bufsize=4096,
-                                            universal_newlines=True,
-                                            stdout=f,
-                                            stderr=f,
-                                            env=exports)
+            self.process = subprocess.Popen(
+                args,
+                bufsize=4096,
+                universal_newlines=True,
+                stdout=f,
+                stderr=f,
+                env=exports,
+            )
             self.log_fd = f
             self.status = "D"
             Deploy.dispatch_counter += 1
         except IOError:
-            log.error('IO Error: See %s', self.log)
+            log.error("IO Error: See %s", self.log)
             if self.log_fd:
                 self.log_fd.close()
             self.status = "K"
 
     def odir_limiter(self, odir, max_odirs=-1):
-        '''Function to backup previously run output directory to maintain a
+        """Function to backup previously run output directory to maintain a
         history of a limited number of output directories. It deletes the output
         directory with the oldest timestamps, if the limit is reached. It returns
         a list of directories that remain after deletion.
@@ -309,15 +316,21 @@ class Deploy():
 
         Returns:
         dirs: Space-separated list of directories that remain after deletion.
-        '''
+        """
         try:
             # If output directory exists, back it up.
             if os.path.exists(odir):
-                ts = run_cmd("date '+" + self.sim_cfg.ts_format + "' -d \"" +
-                             "$(stat -c '%y' " + odir + ")\"")
-                os.system('mv ' + odir + " " + odir + "_" + ts)
+                ts = run_cmd(
+                    "date '+"
+                    + self.sim_cfg.ts_format
+                    + "' -d \""
+                    + "$(stat -c '%y' "
+                    + odir
+                    + ')"'
+                )
+                os.system("mv " + odir + " " + odir + "_" + ts)
         except IOError:
-            log.error('Failed to back up existing output directory %s', odir)
+            log.error("Failed to back up existing output directory %s", odir)
 
         dirs = ""
         # Delete older directories.
@@ -326,25 +339,29 @@ class Deploy():
             # Fatal out if pdir got set to root.
             if pdir == "/":
                 log.fatal(
-                    "Something went wrong while processing \"%s\": odir = \"%s\"",
-                    self.name, odir)
+                    'Something went wrong while processing "%s": odir = "%s"',
+                    self.name,
+                    odir,
+                )
                 sys.exit(1)
 
             if os.path.exists(pdir):
                 find_cmd = "find " + pdir + " -mindepth 1 -maxdepth 1 -type d "
                 dirs = run_cmd(find_cmd)
-                dirs = dirs.replace('\n', ' ')
+                dirs = dirs.replace("\n", " ")
                 list_dirs = dirs.split()
                 num_dirs = len(list_dirs)
                 if max_odirs == -1:
                     max_odirs = self.max_odirs
                 num_rm_dirs = num_dirs - max_odirs
                 if num_rm_dirs > -1:
-                    rm_dirs = run_cmd(find_cmd +
-                                      "-printf '%T+ %p\n' | sort | head -n " +
-                                      str(num_rm_dirs + 1) +
-                                      " | awk '{print $2}'")
-                    rm_dirs = rm_dirs.replace('\n', ' ')
+                    rm_dirs = run_cmd(
+                        find_cmd
+                        + "-printf '%T+ %p\n' | sort | head -n "
+                        + str(num_rm_dirs + 1)
+                        + " | awk '{print $2}'"
+                    )
+                    rm_dirs = rm_dirs.replace("\n", " ")
                     dirs = dirs.replace(rm_dirs, "")
                     os.system("/bin/rm -rf " + rm_dirs)
         except IOError:
@@ -352,18 +369,18 @@ class Deploy():
         return dirs
 
     def set_status(self):
-        self.status = 'P'
+        self.status = "P"
         if self.dry_run is False:
             seen_fail_pattern = False
             for fail_pattern in self.fail_patterns:
                 # Return error message with the following 4 lines.
-                grep_cmd = "grep -m 1 -A 4 -E \'" + fail_pattern + "\' " + self.log
+                grep_cmd = "grep -m 1 -A 4 -E '" + fail_pattern + "' " + self.log
                 (status, rslt) = subprocess.getstatusoutput(grep_cmd)
                 if rslt:
                     msg = "```\n{}\n```\n".format(rslt)
                     self.fail_msg += msg
                     log.log(VERBOSE, msg)
-                    self.status = 'F'
+                    self.status = "F"
                     seen_fail_pattern = True
                     break
 
@@ -382,19 +399,18 @@ class Deploy():
                 self.status = "F"
 
             # Return if status is fail - no need to look for pass patterns.
-            if self.status == 'F':
+            if self.status == "F":
                 return
 
             # If fail patterns were not found, ensure pass patterns indeed were.
             for pass_pattern in self.pass_patterns:
-                grep_cmd = "grep -c -m 1 -E \'" + pass_pattern + "\' " + self.log
+                grep_cmd = "grep -c -m 1 -E '" + pass_pattern + "' " + self.log
                 (status, rslt) = subprocess.getstatusoutput(grep_cmd)
                 if rslt == "0":
-                    msg = "Pass pattern \"{}\" not found.<br>\n".format(
-                        pass_pattern)
+                    msg = 'Pass pattern "{}" not found.<br>\n'.format(pass_pattern)
                     self.fail_msg += msg
                     log.log(VERBOSE, msg)
-                    self.status = 'F'
+                    self.status = "F"
                     break
 
     # Recursively set sub-item's status if parent item fails
@@ -404,15 +420,15 @@ class Deploy():
             sub_item.set_sub_status(status)
 
     def link_odir(self):
-        if self.status == '.':
+        if self.status == ".":
             log.error("Method unexpectedly called!")
         else:
-            old_link = self.sim_cfg.links['D'] + "/" + self.odir_ln
+            old_link = self.sim_cfg.links["D"] + "/" + self.odir_ln
             new_link = self.sim_cfg.links[self.status] + "/" + self.odir_ln
             cmd = "ln -s " + self.odir + " " + new_link + "; "
             cmd += "rm " + old_link
             if os.system(cmd):
-                log.error("Cmd \"%s\" could not be run", cmd)
+                log.error('Cmd "%s" could not be run', cmd)
 
     def get_status(self):
         if self.status != "D":
@@ -421,15 +437,13 @@ class Deploy():
             self.log_fd.close()
             self.set_status()
 
-            log.debug("Item %s has completed execution: %s", self.name,
-                      self.status)
+            log.debug("Item %s has completed execution: %s", self.name, self.status)
             Deploy.dispatch_counter -= 1
             self.link_odir()
             del self.process
 
     def kill(self):
-        '''Kill running processes.
-        '''
+        """Kill running processes."""
         if self.status == "D" and self.process.poll() is None:
             self.kill_remote_job()
 
@@ -450,19 +464,19 @@ class Deploy():
                 item.kill()
 
     def kill_remote_job(self):
-        '''
+        """
         If jobs are run in remote server, need to use another command to kill them.
-        '''
+        """
         # TODO: Currently only support lsf, may need to add support for GCP later.
 
         # If use lsf, kill it by job ID.
         if re.match("^bsub", self.sim_cfg.job_prefix):
             # get job id from below string
             # Job <xxxxxx> is submitted to default queue
-            grep_cmd = "grep -m 1 -E \'" + "^Job <" + "\' " + self.log
+            grep_cmd = "grep -m 1 -E '" + "^Job <" + "' " + self.log
             (status, rslt) = subprocess.getstatusoutput(grep_cmd)
             if rslt != "":
-                job_id = rslt.split('Job <')[1].split('>')[0]
+                job_id = rslt.split("Job <")[1].split(">")[0]
                 try:
                     subprocess.run(["bkill", job_id], check=True)
                 except Exception as e:
@@ -498,8 +512,7 @@ class Deploy():
         # Check if elapsed time has reached the next print interval.
         def has_print_interval_reached():
             # Deploy.print_interval is expected to be < 1 hour.
-            return (((Deploy.mm * 60 + Deploy.ss) %
-                     Deploy.print_interval) == 0)
+            return ((Deploy.mm * 60 + Deploy.ss) % Deploy.print_interval) == 0
 
         def dispatch_items(items):
             item_names = OrderedDict()
@@ -513,8 +526,13 @@ class Deploy():
             for target in item_names.keys():
                 if item_names[target] != "":
                     item_names[target] = "  [" + item_names[target][:-2] + "]"
-                    log.log(VERBOSE, "[%s]: [%s]: [dispatch]:\n%s",
-                            get_timer_val(), target, item_names[target])
+                    log.log(
+                        VERBOSE,
+                        "[%s]: [%s]: [dispatch]:\n%s",
+                        get_timer_val(),
+                        target,
+                        item_names[target],
+                    )
 
         # Initialize status for a target, add '_stats_' for the said target
         # and initialize counters for queued, dispatched, passed, failed,
@@ -522,44 +540,44 @@ class Deploy():
         # items in a given target are done.
         def init_status_target_stats(status, target):
             status[target] = OrderedDict()
-            status[target]['_stats_'] = OrderedDict()
-            status[target]['_stats_']['Q'] = 0
-            status[target]['_stats_']['D'] = 0
-            status[target]['_stats_']['P'] = 0
-            status[target]['_stats_']['F'] = 0
-            status[target]['_stats_']['K'] = 0
-            status[target]['_stats_']['T'] = 0
-            status[target]['_done_'] = False
+            status[target]["_stats_"] = OrderedDict()
+            status[target]["_stats_"]["Q"] = 0
+            status[target]["_stats_"]["D"] = 0
+            status[target]["_stats_"]["P"] = 0
+            status[target]["_stats_"]["F"] = 0
+            status[target]["_stats_"]["K"] = 0
+            status[target]["_stats_"]["T"] = 0
+            status[target]["_done_"] = False
 
         # Update status counter for a newly queued item.
         def add_status_target_queued(status, item):
             if item.target not in status.keys():
                 init_status_target_stats(status, item.target)
             status[item.target][item] = "Q"
-            status[item.target]['_stats_']['Q'] += 1
-            status[item.target]['_stats_']['T'] += 1
+            status[item.target]["_stats_"]["Q"] += 1
+            status[item.target]["_stats_"]["T"] += 1
 
         # Update status counters for a target.
         def update_status_target_stats(status, item):
             old_status = status[item.target][item]
-            status[item.target]['_stats_'][old_status] -= 1
-            status[item.target]['_stats_'][item.status] += 1
+            status[item.target]["_stats_"][old_status] -= 1
+            status[item.target]["_stats_"][item.status] += 1
             status[item.target][item] = item.status
 
         def check_if_done_and_print_status(status, print_status_flag):
             all_done = True
             for target in status.keys():
-                target_done_prev = status[target]['_done_']
-                target_done_curr = ((status[target]['_stats_']["Q"] == 0) and
-                                    (status[target]['_stats_']["D"] == 0))
-                status[target]['_done_'] = target_done_curr
+                target_done_prev = status[target]["_done_"]
+                target_done_curr = (status[target]["_stats_"]["Q"] == 0) and (
+                    status[target]["_stats_"]["D"] == 0
+                )
+                status[target]["_done_"] = target_done_curr
                 all_done &= target_done_curr
 
                 # Print if flag is set and target_done is not True for two
                 # consecutive times.
-                if not (target_done_prev and
-                        target_done_curr) and print_status_flag:
-                    stats = status[target]['_stats_']
+                if not (target_done_prev and target_done_curr) and print_status_flag:
+                    stats = status[target]["_stats_"]
                     width = "0{}d".format(len(str(stats["T"])))
                     msg = "["
                     for s in stats.keys():
@@ -570,8 +588,10 @@ class Deploy():
 
         # Print legend once at the start of the run.
         if Deploy.print_legend:
-            log.info("[legend]: [Q: queued, D: dispatched, "
-                     "P: passed, F: failed, K: killed, T: total]")
+            log.info(
+                "[legend]: [Q: queued, D: dispatched, "
+                "P: passed, F: failed, K: killed, T: total]"
+            )
             Deploy.print_legend = False
 
         status = OrderedDict()
@@ -594,13 +614,22 @@ class Deploy():
                         if item.status != "P":
                             # Kill its sub items if item did not pass.
                             item.set_sub_status("K")
-                            log.error("[%s]: [%s]: [status] [%s: %s]",
-                                      get_timer_val(), item.target,
-                                      item.identifier, item.status)
+                            log.error(
+                                "[%s]: [%s]: [status] [%s: %s]",
+                                get_timer_val(),
+                                item.target,
+                                item.identifier,
+                                item.status,
+                            )
                         else:
-                            log.log(VERBOSE, "[%s]: [%s]: [status] [%s: %s]",
-                                    get_timer_val(), item.target,
-                                    item.identifier, item.status)
+                            log.log(
+                                VERBOSE,
+                                "[%s]: [%s]: [status] [%s: %s]",
+                                get_timer_val(),
+                                item.target,
+                                item.identifier,
+                                item.status,
+                            )
                         # Queue items' sub-items if it is done.
                         queued_items.extend(item.sub)
                         for sub_item in item.sub:
@@ -608,7 +637,7 @@ class Deploy():
                     update_status_target_stats(status, item)
 
             # Dispatch items from the queue as slots free up.
-            all_done = (len(queued_items) == 0)
+            all_done = len(queued_items) == 0
             if not all_done:
                 num_slots = Deploy.max_parallel - Deploy.dispatch_counter
                 if num_slots > Deploy.slot_limit:
@@ -624,8 +653,7 @@ class Deploy():
                         queued_items = []
 
             # Check if we are done and print the status periodically.
-            all_done &= check_if_done_and_print_status(status,
-                                                       print_status_flag)
+            all_done &= check_if_done_and_print_status(status, print_status_flag)
 
             # Advance time by 1s if there is more work to do.
             if not all_done:
@@ -652,29 +680,31 @@ class CompileSim(Deploy):
         self.pass_patterns = []
         self.fail_patterns = []
 
-        self.mandatory_cmd_attrs.update({
-            # tool srcs
-            "tool_srcs": False,
-            "tool_srcs_dir": False,
+        self.mandatory_cmd_attrs.update(
+            {
+                # tool srcs
+                "tool_srcs": False,
+                "tool_srcs_dir": False,
+                # Flist gen
+                "sv_flist_gen_cmd": False,
+                "sv_flist_gen_dir": False,
+                "sv_flist_gen_opts": False,
+                # Build
+                "build_dir": False,
+                "pre_build_cmds": False,
+                "build_cmd": False,
+                "build_opts": False,
+                "post_build_cmds": False,
+            }
+        )
 
-            # Flist gen
-            "sv_flist_gen_cmd": False,
-            "sv_flist_gen_dir": False,
-            "sv_flist_gen_opts": False,
-
-            # Build
-            "build_dir": False,
-            "pre_build_cmds": False,
-            "build_cmd": False,
-            "build_opts": False,
-            "post_build_cmds": False,
-        })
-
-        self.mandatory_misc_attrs.update({
-            "cov_db_dir": False,
-            "build_pass_patterns": False,
-            "build_fail_patterns": False
-        })
+        self.mandatory_misc_attrs.update(
+            {
+                "cov_db_dir": False,
+                "build_pass_patterns": False,
+                "build_fail_patterns": False,
+            }
+        )
 
         super().parse_dict(build_mode.__dict__)
         # Call this method again with the sim_cfg dict passed as the object,
@@ -687,7 +717,7 @@ class CompileSim(Deploy):
 
         # Start fail message construction
         self.fail_msg = "\n**BUILD:** {}<br>\n".format(self.name)
-        log_sub_path = self.log.replace(self.sim_cfg.scratch_path + '/', '')
+        log_sub_path = self.log.replace(self.sim_cfg.scratch_path + "/", "")
         self.fail_msg += "**LOG:** $scratch_path/{}<br>\n".format(log_sub_path)
 
         CompileSim.items.append(self)
@@ -715,26 +745,25 @@ class CompileOneShot(Deploy):
         self.pass_patterns = []
         self.fail_patterns = []
 
-        self.mandatory_cmd_attrs.update({
-            # tool srcs
-            "tool_srcs": False,
-            "tool_srcs_dir": False,
-
-            # Flist gen
-            "sv_flist_gen_cmd": False,
-            "sv_flist_gen_dir": False,
-            "sv_flist_gen_opts": False,
-
-            # Build
-            "build_dir": False,
-            "build_cmd": False,
-            "build_opts": False,
-            "build_log": False,
-
-            # Report processing
-            "report_cmd": False,
-            "report_opts": False
-        })
+        self.mandatory_cmd_attrs.update(
+            {
+                # tool srcs
+                "tool_srcs": False,
+                "tool_srcs_dir": False,
+                # Flist gen
+                "sv_flist_gen_cmd": False,
+                "sv_flist_gen_dir": False,
+                "sv_flist_gen_opts": False,
+                # Build
+                "build_dir": False,
+                "build_cmd": False,
+                "build_opts": False,
+                "build_log": False,
+                # Report processing
+                "report_cmd": False,
+                "report_opts": False,
+            }
+        )
 
         super().parse_dict(build_mode.__dict__)
         # Call this method again with the sim_cfg dict passed as the object,
@@ -745,7 +774,7 @@ class CompileOneShot(Deploy):
 
         # Start fail message construction
         self.fail_msg = "\n**BUILD:** {}<br>\n".format(self.name)
-        log_sub_path = self.log.replace(self.sim_cfg.scratch_path + '/', '')
+        log_sub_path = self.log.replace(self.sim_cfg.scratch_path + "/", "")
         self.fail_msg += "**LOG:** $scratch_path/{}<br>\n".format(log_sub_path)
 
         CompileOneShot.items.append(self)
@@ -773,29 +802,33 @@ class RunTest(Deploy):
         self.pass_patterns = []
         self.fail_patterns = []
 
-        self.mandatory_cmd_attrs.update({
-            # tool srcs
-            "tool_srcs": False,
-            "tool_srcs_dir": False,
-            "proj_root": False,
-            "uvm_test": False,
-            "uvm_test_seq": False,
-            "sw_images": False,
-            "sw_build_device": False,
-            "sw_build_dir": False,
-            "run_dir": False,
-            "pre_run_cmds": False,
-            "run_cmd": False,
-            "run_opts": False,
-            "post_run_cmds": False,
-        })
+        self.mandatory_cmd_attrs.update(
+            {
+                # tool srcs
+                "tool_srcs": False,
+                "tool_srcs_dir": False,
+                "proj_root": False,
+                "uvm_test": False,
+                "uvm_test_seq": False,
+                "sw_images": False,
+                "sw_build_device": False,
+                "sw_build_dir": False,
+                "run_dir": False,
+                "pre_run_cmds": False,
+                "run_cmd": False,
+                "run_opts": False,
+                "post_run_cmds": False,
+            }
+        )
 
-        self.mandatory_misc_attrs.update({
-            "run_dir_name": False,
-            "cov_db_test_dir": False,
-            "run_pass_patterns": False,
-            "run_fail_patterns": False
-        })
+        self.mandatory_misc_attrs.update(
+            {
+                "run_dir_name": False,
+                "cov_db_test_dir": False,
+                "run_pass_patterns": False,
+                "run_fail_patterns": False,
+            }
+        )
 
         self.index = index
         self.seed = RunTest.get_seed()
@@ -816,7 +849,7 @@ class RunTest(Deploy):
         # Start fail message construction
         self.fail_msg = "\n**TEST:** {}, ".format(self.name)
         self.fail_msg += "**SEED:** {}<br>\n".format(self.seed)
-        log_sub_path = self.log.replace(self.sim_cfg.scratch_path + '/', '')
+        log_sub_path = self.log.replace(self.sim_cfg.scratch_path + "/", "")
         self.fail_msg += "**LOG:** $scratch_path/{}<br>\n".format(log_sub_path)
 
         RunTest.items.append(self)
@@ -827,14 +860,17 @@ class RunTest(Deploy):
         self.identifier = self.sim_cfg.name + ":" + self.run_dir_name
 
     def get_status(self):
-        '''Override base class get_status implementation for additional post-status
-        actions.'''
+        """Override base class get_status implementation for additional post-status
+        actions."""
         super().get_status()
         if self.status not in ["D", "P"]:
             # Delete the coverage data if available.
             if os.path.exists(self.cov_db_test_dir):
-                log.log(VERBOSE, "Deleting coverage data of failing test:\n%s",
-                        self.cov_db_test_dir)
+                log.log(
+                    VERBOSE,
+                    "Deleting coverage data of failing test:\n%s",
+                    self.cov_db_test_dir,
+                )
                 os.system("/bin/rm -rf " + self.cov_db_test_dir)
 
     @staticmethod
@@ -864,26 +900,26 @@ class CovUnr(Deploy):
         super().__init__(sim_cfg)
 
         self.target = "cov_unr"
-        self.mandatory_cmd_attrs.update({
-            # tool srcs
-            "tool_srcs": False,
-            "tool_srcs_dir": False,
+        self.mandatory_cmd_attrs.update(
+            {
+                # tool srcs
+                "tool_srcs": False,
+                "tool_srcs_dir": False,
+                # Need to generate filelist based on build mode
+                "sv_flist_gen_cmd": False,
+                "sv_flist_gen_dir": False,
+                "sv_flist_gen_opts": False,
+                "build_dir": False,
+                "cov_unr_build_cmd": False,
+                "cov_unr_build_opts": False,
+                "cov_unr_run_cmd": False,
+                "cov_unr_run_opts": False,
+            }
+        )
 
-            # Need to generate filelist based on build mode
-            "sv_flist_gen_cmd": False,
-            "sv_flist_gen_dir": False,
-            "sv_flist_gen_opts": False,
-            "build_dir": False,
-            "cov_unr_build_cmd": False,
-            "cov_unr_build_opts": False,
-            "cov_unr_run_cmd": False,
-            "cov_unr_run_opts": False
-        })
-
-        self.mandatory_misc_attrs.update({
-            "cov_unr_dir": False,
-            "build_fail_patterns": False
-        })
+        self.mandatory_misc_attrs.update(
+            {"cov_unr_dir": False, "build_fail_patterns": False}
+        )
 
         super().parse_dict(sim_cfg.__dict__)
         self.__post_init__()
@@ -894,7 +930,7 @@ class CovUnr(Deploy):
 
         # Start fail message construction
         self.fail_msg = "\n**COV_UNR:** {}<br>\n".format(self.name)
-        log_sub_path = self.log.replace(self.sim_cfg.scratch_path + '/', '')
+        log_sub_path = self.log.replace(self.sim_cfg.scratch_path + "/", "")
         self.fail_msg += "**LOG:** $scratch_path/{}<br>\n".format(log_sub_path)
 
         CovUnr.items.append(self)
@@ -921,15 +957,13 @@ class CovMerge(Deploy):
         # be merged.
         self.cov_db_dirs = ""
 
-        self.mandatory_cmd_attrs.update({
-            "cov_merge_cmd": False,
-            "cov_merge_opts": False
-        })
+        self.mandatory_cmd_attrs.update(
+            {"cov_merge_cmd": False, "cov_merge_opts": False}
+        )
 
-        self.mandatory_misc_attrs.update({
-            "cov_merge_dir": False,
-            "cov_merge_db_dir": False
-        })
+        self.mandatory_misc_attrs.update(
+            {"cov_merge_dir": False, "cov_merge_db_dir": False}
+        )
 
         super().parse_dict(sim_cfg.__dict__)
         self.__post_init__()
@@ -940,7 +974,7 @@ class CovMerge(Deploy):
 
         # Start fail message construction
         self.fail_msg = "\n**COV_MERGE:** {}<br>\n".format(self.name)
-        log_sub_path = self.log.replace(self.sim_cfg.scratch_path + '/', '')
+        log_sub_path = self.log.replace(self.sim_cfg.scratch_path + "/", "")
         self.fail_msg += "**LOG:** $scratch_path/{}<br>\n".format(log_sub_path)
 
         CovMerge.items.append(self)
@@ -959,14 +993,16 @@ class CovMerge(Deploy):
             self.__dict__,
             self.__dict__,
             ignored_wildcards=["cov_db_dirs"],
-            ignore_error=True)
+            ignore_error=True,
+        )
 
         # Second pass: search in sim_cfg dict, this time not ignoring errors.
         self.__dict__ = find_and_substitute_wildcards(
             self.__dict__,
             self.sim_cfg.__dict__,
             ignored_wildcards=["cov_db_dirs"],
-            ignore_error=False)
+            ignore_error=False,
+        )
 
         # Call base class __post_init__ to do checks and substitutions
         super().__post_init__()
@@ -981,7 +1017,7 @@ class CovMerge(Deploy):
             self.cov_db_dirs += prev_cov_db_dirs
 
         # Append cov_db_dirs to the list of exports.
-        self.exports["cov_db_dirs"] = "\"{}\"".format(self.cov_db_dirs)
+        self.exports["cov_db_dirs"] = '"{}"'.format(self.cov_db_dirs)
 
 
 class CovReport(Deploy):
@@ -1003,23 +1039,24 @@ class CovReport(Deploy):
         self.cov_total = ""
         self.cov_results = ""
 
-        self.mandatory_cmd_attrs.update({
-            "cov_report_cmd": False,
-            "cov_report_opts": False
-        })
+        self.mandatory_cmd_attrs.update(
+            {"cov_report_cmd": False, "cov_report_opts": False}
+        )
 
-        self.mandatory_misc_attrs.update({
-            "cov_report_dir": False,
-            "cov_merge_db_dir": False,
-            "cov_report_txt": False
-        })
+        self.mandatory_misc_attrs.update(
+            {
+                "cov_report_dir": False,
+                "cov_merge_db_dir": False,
+                "cov_report_txt": False,
+            }
+        )
 
         super().parse_dict(sim_cfg.__dict__)
         self.__post_init__()
 
         # Start fail message construction
         self.fail_msg = "\n**COV_REPORT:** {}<br>\n".format(self.name)
-        log_sub_path = self.log.replace(self.sim_cfg.scratch_path + '/', '')
+        log_sub_path = self.log.replace(self.sim_cfg.scratch_path + "/", "")
         self.fail_msg += "**LOG:** $scratch_path/{}<br>\n".format(log_sub_path)
 
         CovReport.items.append(self)
@@ -1029,15 +1066,15 @@ class CovReport(Deploy):
         # Once passed, extract the cov results summary from the dashboard.
         if self.status == "P":
             results, self.cov_total, ex_msg = get_cov_summary_table(
-                self.cov_report_txt, self.sim_cfg.tool)
+                self.cov_report_txt, self.sim_cfg.tool
+            )
 
             if not ex_msg:
                 # Succeeded in obtaining the coverage data.
-                colalign = (("center", ) * len(results[0]))
-                self.cov_results = tabulate(results,
-                                            headers="firstrow",
-                                            tablefmt="pipe",
-                                            colalign=colalign)
+                colalign = ("center",) * len(results[0])
+                self.cov_results = tabulate(
+                    results, headers="firstrow", tablefmt="pipe", colalign=colalign
+                )
             else:
                 self.fail_msg += ex_msg
                 log.error(ex_msg)
@@ -1064,25 +1101,26 @@ class CovAnalyze(Deploy):
         self.pass_patterns = []
         self.fail_patterns = []
 
-        self.mandatory_cmd_attrs.update({
-            # tool srcs
-            "tool_srcs": False,
-            "tool_srcs_dir": False,
-            "cov_analyze_cmd": False,
-            "cov_analyze_opts": False
-        })
+        self.mandatory_cmd_attrs.update(
+            {
+                # tool srcs
+                "tool_srcs": False,
+                "tool_srcs_dir": False,
+                "cov_analyze_cmd": False,
+                "cov_analyze_opts": False,
+            }
+        )
 
-        self.mandatory_misc_attrs.update({
-            "cov_analyze_dir": False,
-            "cov_merge_db_dir": False
-        })
+        self.mandatory_misc_attrs.update(
+            {"cov_analyze_dir": False, "cov_merge_db_dir": False}
+        )
 
         super().parse_dict(sim_cfg.__dict__)
         self.__post_init__()
 
         # Start fail message construction
         self.fail_msg = "\n**COV_ANALYZE:** {}<br>\n".format(self.name)
-        log_sub_path = self.log.replace(self.sim_cfg.scratch_path + '/', '')
+        log_sub_path = self.log.replace(self.sim_cfg.scratch_path + "/", "")
         self.fail_msg += "**LOG:** $scratch_path/{}<br>\n".format(log_sub_path)
 
         CovAnalyze.items.append(self)

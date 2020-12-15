@@ -18,23 +18,19 @@ from .gens.jump import Jump
 
 
 class SnippetGens:
-    '''A collection of snippet generators'''
-    _WEIGHTED_CLASSES = [
-        (ECall, 1.0),
-        (StraightLineInsn, 1.0),
-        (Jump, 0.1)
-    ]
+    """A collection of snippet generators"""
+
+    _WEIGHTED_CLASSES = [(ECall, 1.0), (StraightLineInsn, 1.0), (Jump, 0.1)]
 
     def __init__(self, insns_file: InsnsFile) -> None:
         self.generators = []  # type: List[Tuple[SnippetGen, float]]
         for cls, weight in SnippetGens._WEIGHTED_CLASSES:
             self.generators.append((cls(insns_file), weight))
 
-    def gen(self,
-            size: int,
-            model: Model,
-            program: Program) -> Tuple[Snippet, bool, int]:
-        '''Pick a snippet and update model, program with its contents.
+    def gen(
+        self, size: int, model: Model, program: Program
+    ) -> Tuple[Snippet, bool, int]:
+        """Pick a snippet and update model, program with its contents.
 
         Returns a pair (snippet, done, new_size) with the same meanings as
         Snippet.gen, except that new_size is clamped to be at least 1 if done
@@ -43,7 +39,7 @@ class SnippetGens:
         slightly longer instruction stream than we intended, but it shouldn't
         be much bigger.
 
-        '''
+        """
         real_weights = []
         for generator, weight in self.generators:
             weight_mult = generator.pick_weight(size, model, program)
@@ -51,8 +47,7 @@ class SnippetGens:
 
         while True:
             # Pick a generator based on the weights in real_weights.
-            idx = random.choices(range(len(self.generators)),
-                                 weights=real_weights)[0]
+            idx = random.choices(range(len(self.generators)), weights=real_weights)[0]
             generator, _ = self.generators[idx]
 
             # Note that there should always be at least one non-zero weight in

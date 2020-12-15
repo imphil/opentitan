@@ -30,28 +30,27 @@ def main():
     files = ["flash_ctrl_reg_pkg.sv", "tl_main_pkg.sv"]
     match = [
         r"parameter\s+int\s+RegPagesPerBank\s*=\s*32;",
-        r"localparam\s+logic\s*\[\s*31\s*:\s*0\s*\]\s+ADDR_MASK_EFLASH\s*=\s*32'h\s*0000ffff;"
+        r"localparam\s+logic\s*\[\s*31\s*:\s*0\s*\]\s+ADDR_MASK_EFLASH\s*=\s*32'h\s*0000ffff;",
     ]
 
     all_good = True
     for idx in range(len(files)):
         file_path = find_file(files[idx], "../")
         if not file_path:
-            log.error("Could not find file " + files[idx] +
-                      " in work directory.")
+            log.error("Could not find file " + files[idx] + " in work directory.")
             return 1
 
-        with open(file_path, 'r') as file:
+        with open(file_path, "r") as file:
             text = file.read()
             if not re.search(match[idx], text):
                 all_good = False
 
     if not all_good:
         log.error(
-            "It seems that the size of the embedded flash has not been adjusted for the targeted " +
-            "FPGA device. The design might not fit. \n" +
-            "Please run hw/top_earlgrey/util/opentitan_earlgrey_flash_size_reduce.py before " +
-            "running this fusesoc core."
+            "It seems that the size of the embedded flash has not been adjusted for the targeted "
+            + "FPGA device. The design might not fit. \n"
+            + "Please run hw/top_earlgrey/util/opentitan_earlgrey_flash_size_reduce.py before "
+            + "running this fusesoc core."
         )
         return 1
 

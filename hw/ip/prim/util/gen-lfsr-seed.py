@@ -27,9 +27,9 @@ def _as_snake_case_prefix(name):
     outname = ""
     for c in name:
         if c.isupper() and len(outname) > 0:
-            outname += '_'
+            outname += "_"
         outname += c.lower()
-    return outname + ('_' if name else '')
+    return outname + ("_" if name else "")
 
 
 def _get_random_data_hex_literal(width):
@@ -51,16 +51,16 @@ def _blockify(s, size, limit):
     remain = size
     while remain > 0:
         s_incr = int(numbits / 4)
-        s_list.append("{}'h{}".format(numbits, s[str_idx: str_idx + s_incr]))
+        s_list.append("{}'h{}".format(numbits, s[str_idx : str_idx + s_incr]))
         str_idx += s_incr
         remain -= numbits
         numbits = limit * 4
 
-    return(",\n  ".join(s_list))
+    return ",\n  ".join(s_list)
 
 
 def _get_random_perm_hex_literal(numel):
-    """ Compute a random permutation of 'numel' elements and
+    """Compute a random permutation of 'numel' elements and
     return as packed hex literal"""
     num_elements = int(numel)
     width = int(ceil(log2(num_elements)))
@@ -68,58 +68,56 @@ def _get_random_perm_hex_literal(numel):
     random.shuffle(idx)
     literal_str = ""
     for k in idx:
-        literal_str += format(k, '0' + str(width) + 'b')
+        literal_str += format(k, "0" + str(width) + "b")
     # convert to hex for space efficiency
     literal_str = hex(int(literal_str, 2))
     return _blockify(literal_str, width * numel, 64)
 
 
 def _wrapped_docstring():
-    '''Return a text-wrapped version of the module docstring'''
+    """Return a text-wrapped version of the module docstring"""
     paras = []
     para = []
-    for line in __doc__.strip().split('\n'):
+    for line in __doc__.strip().split("\n"):
         line = line.strip()
         if not line:
             if para:
-                paras.append('\n'.join(para))
+                paras.append("\n".join(para))
                 para = []
         else:
             para.append(line)
     if para:
-        paras.append('\n'.join(para))
+        paras.append("\n".join(para))
 
-    return '\n\n'.join(textwrap.fill(p) for p in paras)
+    return "\n\n".join(textwrap.fill(p) for p in paras)
 
 
 def main():
-    log.basicConfig(level=log.INFO,
-                    format="%(asctime)s - %(message)s",
-                    datefmt="%Y-%m-%d %H:%M")
+    log.basicConfig(
+        level=log.INFO, format="%(asctime)s - %(message)s", datefmt="%Y-%m-%d %H:%M"
+    )
 
     parser = argparse.ArgumentParser(
         prog="gen-lfsre-perm",
         description=_wrapped_docstring(),
-        formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-w',
-                        '--width',
-                        type=int,
-                        default=32,
-                        metavar='<#bitwidth>',
-                        help='LFSR width.')
-    parser.add_argument('-s',
-                        '--seed',
-                        type=int,
-                        metavar='<seed>',
-                        help='Custom seed for RNG.')
-    parser.add_argument('-p',
-                        '--prefix',
-                        type=str,
-                        metavar='name',
-                        default="",
-                        help='Optional prefix to add to '
-                             'types and parameters. '
-                             'Make sure this is PascalCase.')
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "-w", "--width", type=int, default=32, metavar="<#bitwidth>", help="LFSR width."
+    )
+    parser.add_argument(
+        "-s", "--seed", type=int, metavar="<seed>", help="Custom seed for RNG."
+    )
+    parser.add_argument(
+        "-p",
+        "--prefix",
+        type=str,
+        metavar="name",
+        default="",
+        help="Optional prefix to add to "
+        "types and parameters. "
+        "Make sure this is PascalCase.",
+    )
 
     args = parser.parse_args()
 
@@ -137,7 +135,7 @@ def main():
 
     type_prefix = _as_snake_case_prefix(args.prefix)
 
-    outstr = '''
+    outstr = """
 // These LFSR parameters have been generated with
 // $ hw/ip/prim/util/gen-lfsr-seed.py --width {} --seed {} --prefix "{}"
 parameter int {}LfsrWidth = {};
@@ -147,12 +145,24 @@ parameter {}lfsr_seed_t RndCnst{}LfsrSeedDefault = {};
 parameter {}lfsr_perm_t RndCnst{}LfsrPermDefault = {{
   {}
 }};
-'''.format(args.width, args.seed, args.prefix,
-           args.prefix, args.width,
-           args.prefix, type_prefix,
-           args.prefix, args.prefix, type_prefix,
-           type_prefix, args.prefix, _get_random_data_hex_literal(args.width),
-           type_prefix, args.prefix, _get_random_perm_hex_literal(args.width))
+""".format(
+        args.width,
+        args.seed,
+        args.prefix,
+        args.prefix,
+        args.width,
+        args.prefix,
+        type_prefix,
+        args.prefix,
+        args.prefix,
+        type_prefix,
+        type_prefix,
+        args.prefix,
+        _get_random_data_hex_literal(args.width),
+        type_prefix,
+        args.prefix,
+        _get_random_perm_hex_literal(args.width),
+    )
 
     print(outstr)
 

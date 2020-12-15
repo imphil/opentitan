@@ -11,6 +11,7 @@ class Edge:
     a Node can be a host port, output of async_fifo, port in a socket,
     or a device port.
     """
+
     def __init__(self, us, ds):
         self.us = us
         self.ds = ds

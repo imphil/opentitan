@@ -22,7 +22,8 @@ class TraceLoopStart(Trace):
 
     def trace(self) -> str:
         return "Start LOOP, {} iterations, bodysize: {}".format(
-            self.iterations, self.bodysize)
+            self.iterations, self.bodysize
+        )
 
 
 class TraceLoopIteration(Trace):
@@ -35,14 +36,15 @@ class TraceLoopIteration(Trace):
 
 
 class LoopLevel:
-    '''An object representing a level in the current loop stack
+    """An object representing a level in the current loop stack
 
     start_addr is the first instruction inside the loop (the instruction
     following the loop instruction). insn_count is the number of instructions
     in the loop (and must be positive). restarts is one less than the number of
     iterations, and must be non-negative.
 
-    '''
+    """
+
     def __init__(self, start_addr: int, insn_count: int, restarts: int):
         assert 0 <= start_addr
         assert 0 < insn_count
@@ -55,42 +57,40 @@ class LoopLevel:
 
 
 class LoopStack:
-    '''An object representing the loop stack
+    """An object representing the loop stack
 
     The loop stack holds up to 8 LoopLevel objects, corresponding to nested
     loops.
 
-    '''
+    """
+
     stack_depth = 8
 
     def __init__(self) -> None:
         self.stack = []  # type: List[LoopLevel]
         self.trace = []  # type: List[Trace]
 
-    def start_loop(self,
-                   next_addr: int,
-                   loop_count: int,
-                   insn_count: int) -> None:
-        '''Start a loop.
+    def start_loop(self, next_addr: int, loop_count: int, insn_count: int) -> None:
+        """Start a loop.
 
         next_addr is the address of the first instruction in the loop body.
         loop_count must be positive and is the number of times to execute the
         loop. insn_count must be positive and is the number of instructions in
         the loop body.
 
-        '''
+        """
         assert 0 <= next_addr
         assert 0 < insn_count
         assert 0 < loop_count
 
         if len(self.stack) == LoopStack.stack_depth:
-            raise LoopError('loop stack overflow')
+            raise LoopError("loop stack overflow")
 
         self.trace.append(TraceLoopStart(loop_count, insn_count))
         self.stack.append(LoopLevel(next_addr, insn_count, loop_count - 1))
 
     def check_insn(self, pc: int, insn_affects_control: bool) -> None:
-        '''Check for branch instructions at the end of a loop body'''
+        """Check for branch instructions at the end of a loop body"""
         if self.stack:
             top = self.stack[-1]
             if pc + 4 == top.match_addr:
@@ -98,10 +98,10 @@ class LoopStack:
                 # Make sure that it isn't a jump, branch or another loop
                 # instruction.
                 if insn_affects_control:
-                    raise LoopError('control instruction at end of loop')
+                    raise LoopError("control instruction at end of loop")
 
     def step(self, next_pc: int) -> Optional[int]:
-        '''Update loop stack. If we should loop, return new PC'''
+        """Update loop stack. If we should loop, return new PC"""
         if self.stack:
             top = self.stack[-1]
 
@@ -136,7 +136,7 @@ class LoopStack:
 class OTBNState:
     def __init__(self) -> None:
         self.gprs = GPRs()
-        self.wdrs = RegFile('w', 256, 32)
+        self.wdrs = RegFile("w", 256, 32)
 
         self.wsrs = WSRFile()
         self.csrs = CSRFile()
@@ -158,7 +158,7 @@ class OTBNState:
         self.running = False
 
     def add_stall_cycles(self, num_cycles: int) -> None:
-        '''Add stall cycles before the next insn completes'''
+        """Add stall cycles before the next insn completes"""
         assert num_cycles >= 0
         self._stalls += num_cycles
 
@@ -210,7 +210,7 @@ class OTBNState:
         self.wdrs.commit()
 
     def abort(self) -> None:
-        '''Abort any pending state changes'''
+        """Abort any pending state changes"""
         # This should only be called when an instruction's execution goes
         # wrong. If self._stalls is positive, the bad execution caused those
         # stalls, so we should just zero them.
@@ -226,8 +226,8 @@ class OTBNState:
         self.wdrs.abort()
 
     def start(self) -> None:
-        '''Set the running flag and the ext_reg busy flag'''
-        self.ext_regs.set_bits('STATUS', 1 << 0)
+        """Set the running flag and the ext_reg busy flag"""
+        self.ext_regs.set_bits("STATUS", 1 << 0)
         self.running = True
         # Stall the first cycle immediately after start. The RTL issues its
         # first instruction fetch the cycle after start so only begins executing
@@ -237,22 +237,22 @@ class OTBNState:
         self.add_stall_cycles(1)
 
     def get_quarter_word_unsigned(self, idx: int, qwsel: int) -> int:
-        '''Select a 64-bit quarter of a wide register.
+        """Select a 64-bit quarter of a wide register.
 
         The bits are interpreted as an unsigned value.
 
-        '''
+        """
         assert 0 <= idx <= 31
         assert 0 <= qwsel <= 3
         full_val = self.wdrs.get_reg(idx).read_unsigned()
         return (full_val >> (qwsel * 64)) & ((1 << 64) - 1)
 
     def set_half_word_unsigned(self, idx: int, hwsel: int, value: int) -> None:
-        '''Set the low or high 128-bit half of a wide register to value.
+        """Set the low or high 128-bit half of a wide register to value.
 
         The value should be unsigned.
 
-        '''
+        """
         assert 0 <= idx <= 31
         assert 0 <= hwsel <= 1
         assert 0 <= value <= (1 << 128) - 1
@@ -267,13 +267,13 @@ class OTBNState:
 
     @staticmethod
     def add_with_carry(a: int, b: int, carry_in: int) -> Tuple[int, FlagReg]:
-        '''Compute a + b + carry_in and resulting flags.
+        """Compute a + b + carry_in and resulting flags.
 
         Here, a and b are unsigned 256-bit numbers and carry_in is 0 or 1.
         Returns a pair (result, flags) where result is the unsigned 256-bit
         result and flags is the FlagReg that the computation generates.
 
-        '''
+        """
         mask256 = (1 << 256) - 1
         assert 0 <= a <= mask256
         assert 0 <= b <= mask256
@@ -287,13 +287,13 @@ class OTBNState:
 
     @staticmethod
     def sub_with_borrow(a: int, b: int, borrow_in: int) -> Tuple[int, FlagReg]:
-        '''Compute a - b - borrow_in and resulting flags.
+        """Compute a - b - borrow_in and resulting flags.
 
         Here, a and b are unsigned 256-bit numbers and borrow_in is 0 or 1.
         Returns a pair (result, flags) where result is the unsigned 256-bit
         result and flags is the FlagReg that the computation generates.
 
-        '''
+        """
         mask256 = (1 << 256) - 1
         assert 0 <= a <= mask256
         assert 0 <= b <= mask256
@@ -306,48 +306,47 @@ class OTBNState:
         return (carryless_result, FlagReg.mlz_for_result(C, carryless_result))
 
     def set_flags(self, fg: int, flags: FlagReg) -> None:
-        '''Update flags for a flag group'''
+        """Update flags for a flag group"""
         self.csrs.flags[fg] = flags
 
     def set_mlz_flags(self, fg: int, result: int) -> None:
-        '''Update M, L, Z flags for a flag group using the given result'''
-        self.csrs.flags[fg] = \
-            FlagReg.mlz_for_result(self.csrs.flags[fg].C, result)
+        """Update M, L, Z flags for a flag group using the given result"""
+        self.csrs.flags[fg] = FlagReg.mlz_for_result(self.csrs.flags[fg].C, result)
 
     def pre_insn(self, insn_affects_control: bool) -> None:
-        '''Run before running an instruction'''
+        """Run before running an instruction"""
         self.loop_stack.check_insn(self.pc, insn_affects_control)
 
     def post_insn(self) -> None:
-        '''Update state after running an instruction but before commit'''
+        """Update state after running an instruction but before commit"""
         self.loop_step()
 
     def read_csr(self, idx: int) -> int:
-        '''Read the CSR with index idx as an unsigned 32-bit number'''
+        """Read the CSR with index idx as an unsigned 32-bit number"""
         return self.csrs.read_unsigned(self.wsrs, idx)
 
     def write_csr(self, idx: int, value: int) -> None:
-        '''Write value (an unsigned 32-bit number) to the CSR with index idx'''
+        """Write value (an unsigned 32-bit number) to the CSR with index idx"""
         self.csrs.write_unsigned(self.wsrs, idx, value)
 
     def peek_call_stack(self) -> List[int]:
-        '''Return the current call stack, bottom-first'''
+        """Return the current call stack, bottom-first"""
         return self.gprs.peek_call_stack()
 
     def stop(self, err_code: Optional[int]) -> None:
-        '''Set flags to stop the processor.
+        """Set flags to stop the processor.
 
         If err_code is not None, it is the value to write to the ERR_CODE
         register.
 
-        '''
+        """
         # INTR_STATE is the interrupt state register. Bit 0 (which is being
         # set) is the 'done' flag.
-        self.ext_regs.set_bits('INTR_STATE', 1 << 0)
+        self.ext_regs.set_bits("INTR_STATE", 1 << 0)
         # STATUS is a status register. Bit 0 (being cleared) is the 'busy' flag
-        self.ext_regs.clear_bits('STATUS', 1 << 0)
+        self.ext_regs.clear_bits("STATUS", 1 << 0)
 
         if err_code is not None:
-            self.ext_regs.write('ERR_CODE', err_code, True)
+            self.ext_regs.write("ERR_CODE", err_code, True)
 
         self.running = False

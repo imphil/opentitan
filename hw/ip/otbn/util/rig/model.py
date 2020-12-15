@@ -7,19 +7,23 @@ import random
 from typing import Dict, List, Optional, Tuple
 
 from shared.insn_yaml import Insn
-from shared.operand import (OperandType,
-                            ImmOperandType, OptionOperandType, RegOperandType)
+from shared.operand import (
+    OperandType,
+    ImmOperandType,
+    OptionOperandType,
+    RegOperandType,
+)
 
 from .program import ProgInsn
 
 
 def extended_euclidean_algorithm(a: int, b: int) -> Tuple[int, int, int]:
-    '''The extended Euclidean algorithm.
+    """The extended Euclidean algorithm.
 
     Returns a tuple (r, s, t) so that gcd is the GCD of the two inputs and r =
     a s + b t.
 
-    '''
+    """
     r, r_nxt = a, b
     s, s_nxt = 1, 0
     t, t_nxt = 0, 1
@@ -33,13 +37,14 @@ def extended_euclidean_algorithm(a: int, b: int) -> Tuple[int, int, int]:
     # If both inputs are non-positive, the result comes out negative and we
     # should flip all the signs.
     if r < 0:
-        r, s, t = - r, - s, - t
+        r, s, t = -r, -s, -t
 
     return (r, s, t)
 
 
 class KnownMem:
-    '''A representation of what memory/CSRs have architectural values'''
+    """A representation of what memory/CSRs have architectural values"""
+
     def __init__(self, top_addr: int):
         assert top_addr > 0
 
@@ -49,14 +54,14 @@ class KnownMem:
         self.known_ranges = []  # type: List[Tuple[int, int]]
 
     def touch_range(self, base: int, width: int) -> None:
-        '''Mark {base .. base+width} as known'''
+        """Mark {base .. base+width} as known"""
         assert 0 <= width
         assert 0 <= base <= self.top_addr - width
         for off in range(width):
             self.touch_addr(base + off)
 
     def touch_addr(self, addr: int) -> None:
-        '''Mark word starting at addr as known'''
+        """Mark word starting at addr as known"""
         assert 0 <= addr < self.top_addr
 
         # Find the index of the last range that starts below us, if there is
@@ -107,14 +112,18 @@ class KnownMem:
             assert addr < right_lo
 
             if addr == right_lo - 1:
-                self.known_ranges = (left + [(left_lo, right_hi)] +
-                                     self.known_ranges[first_idx_above + 1:])
+                self.known_ranges = (
+                    left
+                    + [(left_lo, right_hi)]
+                    + self.known_ranges[first_idx_above + 1 :]
+                )
                 return
 
             # Otherwise, we still extend the range by one (but have to put the
             # right hand list back too).
-            self.known_ranges = (left + [(left_lo, left_hi + 1)] +
-                                 self.known_ranges[first_idx_above:])
+            self.known_ranges = (
+                left + [(left_lo, left_hi + 1)] + self.known_ranges[first_idx_above:]
+            )
             return
 
         # We are miles above the left range. If there is no range above, we can
@@ -130,23 +139,29 @@ class KnownMem:
         assert addr < right_lo
 
         if addr == right_lo - 1:
-            self.known_ranges = (left_inc + [(right_lo - 1, right_hi)] +
-                                 self.known_ranges[first_idx_above + 1:])
+            self.known_ranges = (
+                left_inc
+                + [(right_lo - 1, right_hi)]
+                + self.known_ranges[first_idx_above + 1 :]
+            )
             return
 
         # If not, we just insert a 1-element range in between
-        self.known_ranges = (left_inc + [(addr, addr + 1)] +
-                             self.known_ranges[first_idx_above:])
+        self.known_ranges = (
+            left_inc + [(addr, addr + 1)] + self.known_ranges[first_idx_above:]
+        )
         return
 
-    def pick_lsu_target(self,
-                        loads_value: bool,
-                        base_addr: int,
-                        offset_range: Tuple[int, int],
-                        offset_align: int,
-                        width: int,
-                        addr_align: int) -> Optional[int]:
-        '''Try to pick an address with base and offset.
+    def pick_lsu_target(
+        self,
+        loads_value: bool,
+        base_addr: int,
+        offset_range: Tuple[int, int],
+        offset_align: int,
+        width: int,
+        addr_align: int,
+    ) -> Optional[int]:
+        """Try to pick an address with base and offset.
 
         If loads_value is true, the memory needs a known value for at least
         width bytes starting at that address. The address should be encodable
@@ -156,7 +171,7 @@ class KnownMem:
 
         On failure, returns None. On success, returns the chosen address.
 
-        '''
+        """
         assert offset_range[0] <= offset_range[1]
         assert 1 <= offset_align
         assert 1 <= width
@@ -230,8 +245,7 @@ class KnownMem:
         # can use address endpoints to get (disjoint) ranges for k.
         k_ranges = []
         k_weights = []
-        byte_ranges = (self.known_ranges
-                       if loads_value else [(0, self.top_addr - 1)])
+        byte_ranges = self.known_ranges if loads_value else [(0, self.top_addr - 1)]
         minus_u = offset_align // gcd
         for byte_lo, byte_top in byte_ranges:
             # Since we're doing an access of width bytes, we round byte_top
@@ -291,13 +305,14 @@ class KnownMem:
 
 
 class Model:
-    '''An abstract model of the processor and memories
+    """An abstract model of the processor and memories
 
     This definitely doesn't try to act as a simulator. Rather, it tracks what
     registers and locations in memory are guaranteed have defined values after
     following the instruction stream to this point.
 
-    '''
+    """
+
     def __init__(self, dmem_size: int, reset_addr: int) -> None:
         self.dmem_size = dmem_size
 
@@ -314,7 +329,7 @@ class Model:
         self._known_regs = {}  # type: Dict[str, Dict[int, Optional[int]]]
 
         # Set x0 (the zeros register)
-        self._known_regs['gpr'] = {0: 0}
+        self._known_regs["gpr"] = {0: 0}
 
         # A call stack, representing the contents of x1. The top of the stack
         # is at the end (position -1), to match Python's list.pop function. A
@@ -325,11 +340,11 @@ class Model:
 
         # Known values for memory, keyed by memory type ('dmem', 'csr', 'wsr').
         self._known_mem = {
-            'dmem': KnownMem(dmem_size),
+            "dmem": KnownMem(dmem_size),
             # TODO: How many CSRs/WSRs? Is that written down somewhere we can
             # extract?
-            'csr': KnownMem(4096),
-            'wsr': KnownMem(4096)
+            "csr": KnownMem(4096),
+            "wsr": KnownMem(4096),
         }
 
         # The current PC (the address of the next instruction that needs
@@ -337,22 +352,20 @@ class Model:
         self.pc = reset_addr
 
     def read_reg(self, reg_type: str, idx: int) -> None:
-        '''Update the model for a read of the given register
+        """Update the model for a read of the given register
 
         This is mostly ignored, but has an effect for x1, which pops from the
         call stack on a read.
 
-        '''
-        if reg_type == 'gpr' and idx == 1:
+        """
+        if reg_type == "gpr" and idx == 1:
             assert self._call_stack
             self._call_stack.pop()
 
-    def write_reg(self,
-                  reg_type: str,
-                  idx: int,
-                  value: Optional[int],
-                  update: bool) -> None:
-        '''Mark a register as having an architectural value
+    def write_reg(
+        self, reg_type: str, idx: int, value: Optional[int], update: bool
+    ) -> None:
+        """Mark a register as having an architectural value
 
         If value is not None, it is the actual value that the register has.
         Writes to the zeros register x0 are ignored.
@@ -363,8 +376,8 @@ class Model:
         which refines the previous value. This is irrelevant for idempotent
         registers, but matters for x1.
 
-        '''
-        if reg_type == 'gpr':
+        """
+        if reg_type == "gpr":
             if idx == 0:
                 # Ignore writes to x0
                 return
@@ -382,24 +395,24 @@ class Model:
         self._known_regs.setdefault(reg_type, {})[idx] = value
 
     def get_reg(self, reg_type: str, idx: int) -> Optional[int]:
-        '''Get a register value, if known.'''
-        if reg_type == 'gpr' and idx == 1:
+        """Get a register value, if known."""
+        if reg_type == "gpr" and idx == 1:
             return self._call_stack[-1] if self._call_stack else None
 
         return self._known_regs.setdefault(reg_type, {}).get(idx)
 
     def touch_mem(self, mem_type: str, base: int, width: int) -> None:
-        '''Mark {base .. base+width} as known for given memory type'''
+        """Mark {base .. base+width} as known for given memory type"""
         assert mem_type in self._known_mem
         self._known_mem[mem_type].touch_range(base, width)
 
     def pick_operand_value(self, op_type: OperandType) -> Optional[int]:
-        '''Pick a random value for an operand
+        """Pick a random value for an operand
 
         The result will always be non-negative: if the operand is a signed
         immediate, this is encoded as 2s complement.
 
-        '''
+        """
         if isinstance(op_type, RegOperandType):
             return self.pick_reg_operand_value(op_type)
 
@@ -424,9 +437,9 @@ class Model:
         return op_type.op_val_to_enc_val(op_val, self.pc)
 
     def pick_reg_operand_value(self, op_type: RegOperandType) -> Optional[int]:
-        '''Pick a random value for a register operand
+        """Pick a random value for a register operand
 
-        Returns None if there's no valid value possible.'''
+        Returns None if there's no valid value possible."""
         if op_type.is_src():
             # This operand needs an architectural value. Pick a register
             # from the indices in _known_regs[op_type.reg_type].
@@ -435,7 +448,7 @@ class Model:
                 return None
 
             known_list = list(known_regs)
-            if op_type.reg_type == 'gpr':
+            if op_type.reg_type == "gpr":
                 # Add x1 if to the list of known registers (if it has an
                 # architectural value). This won't appear in known_regs,
                 # because we don't track x1 there.
@@ -450,12 +463,12 @@ class Model:
         return random.getrandbits(op_type.width)
 
     def regs_with_known_vals(self, reg_type: str) -> List[Tuple[int, int]]:
-        '''Find registers whose values are known
+        """Find registers whose values are known
 
         Returns a list of pairs (idx, value) where idx is the register index
         and value is its value.
 
-        '''
+        """
         ret = []
         known_regs = self._known_regs.setdefault(reg_type, {})
         for reg_idx, reg_val in known_regs.items():
@@ -464,23 +477,23 @@ class Model:
 
         # Handle x1, which has a known value iff the top of the call stack is
         # not None
-        if reg_type == 'gpr':
+        if reg_type == "gpr":
             assert 1 not in known_regs
             if self._call_stack and self._call_stack[-1] is not None:
                 ret.append((1, self._call_stack[-1]))
 
         return ret
 
-    def pick_lsu_target(self,
-                        mem_type: str,
-                        loads_value: bool,
-                        known_regs: Dict[str, List[Tuple[int, int]]],
-                        imm_rng: Tuple[int, int],
-                        imm_shift: int,
-                        byte_width: int) -> Optional[Tuple[int,
-                                                           int,
-                                                           Dict[str, int]]]:
-        '''Try to pick an address for a naturally-aligned LSU operation.
+    def pick_lsu_target(
+        self,
+        mem_type: str,
+        loads_value: bool,
+        known_regs: Dict[str, List[Tuple[int, int]]],
+        imm_rng: Tuple[int, int],
+        imm_shift: int,
+        byte_width: int,
+    ) -> Optional[Tuple[int, int, Dict[str, int]]]:
+        """Try to pick an address for a naturally-aligned LSU operation.
 
         mem_type is the type of memory (which must a key of self._known_mem).
         If loads_value, this address needs to have an architecturally defined
@@ -497,7 +510,7 @@ class Model:
         the value of any immediate operand and reg_vals is a map from operand
         name to the index picked for that register operand.
 
-        '''
+        """
         assert mem_type in self._known_mem
         assert imm_rng[0] <= imm_rng[1]
         assert 0 <= imm_shift
@@ -515,9 +528,9 @@ class Model:
         base_align = math.gcd(byte_width, 1 << imm_shift)
 
         for name, indices in known_regs.items():
-            aligned_regs = [(idx, value)
-                            for idx, value in indices
-                            if value % base_align == 0]
+            aligned_regs = [
+                (idx, value) for idx, value in indices if value % base_align == 0
+            ]
 
             # If there are no known aligned indices for this operand, give up now.
             if not aligned_regs:
@@ -529,12 +542,9 @@ class Model:
             reg_indices[name] = idx
 
         known_mem = self._known_mem[mem_type]
-        addr = known_mem.pick_lsu_target(loads_value,
-                                         reg_sum,
-                                         imm_rng,
-                                         1 << imm_shift,
-                                         byte_width,
-                                         byte_width)
+        addr = known_mem.pick_lsu_target(
+            loads_value, reg_sum, imm_rng, 1 << imm_shift, byte_width, byte_width
+        )
 
         # If there was no address we could use, give up.
         if addr is None:
@@ -543,55 +553,63 @@ class Model:
         return (addr, addr - reg_sum, reg_indices)
 
     def update_for_lui(self, insn: Insn, op_vals: List[int]) -> None:
-        '''Update model state after a LUI
+        """Update model state after a LUI
 
         A lui instruction looks like "lui x2, 80000" or similar. This operation
         is easy to understand, so we can actually update the model registers
         appropriately.
 
-        '''
-        assert insn.mnemonic == 'lui'
+        """
+        assert insn.mnemonic == "lui"
         assert len(insn.operands) == len(op_vals)
 
-        exp_shape = (len(insn.operands) == 2 and
-                     isinstance(insn.operands[0].op_type, RegOperandType) and
-                     insn.operands[0].op_type.reg_type == 'gpr' and
-                     insn.operands[0].op_type.is_dest() and
-                     isinstance(insn.operands[1].op_type, ImmOperandType) and
-                     not insn.operands[1].op_type.signed)
+        exp_shape = (
+            len(insn.operands) == 2
+            and isinstance(insn.operands[0].op_type, RegOperandType)
+            and insn.operands[0].op_type.reg_type == "gpr"
+            and insn.operands[0].op_type.is_dest()
+            and isinstance(insn.operands[1].op_type, ImmOperandType)
+            and not insn.operands[1].op_type.signed
+        )
         if not exp_shape:
-            raise RuntimeError('LUI instruction read from insns.yml is '
-                               'not the shape expected by '
-                               'Model.update_for_lui.')
+            raise RuntimeError(
+                "LUI instruction read from insns.yml is "
+                "not the shape expected by "
+                "Model.update_for_lui."
+            )
 
         assert op_vals[1] >= 0
-        self.write_reg('gpr', op_vals[0], op_vals[1], True)
+        self.write_reg("gpr", op_vals[0], op_vals[1], True)
 
     def update_for_addi(self, insn: Insn, op_vals: List[int]) -> None:
-        '''Update model state after an ADDI
+        """Update model state after an ADDI
 
         If the source register happens to have a known value, we can do the
         addition and store the known result.
 
-        '''
-        assert insn.mnemonic == 'addi'
+        """
+        assert insn.mnemonic == "addi"
         assert len(insn.operands) == len(op_vals)
 
-        exp_shape = (len(insn.operands) == 3 and
-                     isinstance(insn.operands[0].op_type, RegOperandType) and
-                     insn.operands[0].op_type.reg_type == 'gpr' and
-                     insn.operands[0].op_type.is_dest() and
-                     isinstance(insn.operands[1].op_type, RegOperandType) and
-                     insn.operands[1].op_type.reg_type == 'gpr' and
-                     not insn.operands[1].op_type.is_dest() and
-                     isinstance(insn.operands[2].op_type, ImmOperandType) and
-                     insn.operands[2].op_type.signed)
+        exp_shape = (
+            len(insn.operands) == 3
+            and isinstance(insn.operands[0].op_type, RegOperandType)
+            and insn.operands[0].op_type.reg_type == "gpr"
+            and insn.operands[0].op_type.is_dest()
+            and isinstance(insn.operands[1].op_type, RegOperandType)
+            and insn.operands[1].op_type.reg_type == "gpr"
+            and not insn.operands[1].op_type.is_dest()
+            and isinstance(insn.operands[2].op_type, ImmOperandType)
+            and insn.operands[2].op_type.signed
+        )
         if not exp_shape:
-            raise RuntimeError('ADDI instruction read from insns.yml is '
-                               'not the shape expected by '
-                               'Model.update_for_addi.')
+            raise RuntimeError(
+                "ADDI instruction read from insns.yml is "
+                "not the shape expected by "
+                "Model.update_for_addi."
+            )
 
-        src_val = self.get_reg('gpr', op_vals[1])
+        src_val = self.get_reg("gpr", op_vals[1])
         if src_val is None:
             return
 
@@ -603,55 +621,57 @@ class Model:
             value -= 1 << 32
             assert (value >> 32) == 0
 
-        self.write_reg('gpr', op_vals[0], value, True)
+        self.write_reg("gpr", op_vals[0], value, True)
 
     def update_for_bnlid(self, insn: Insn, op_vals: List[int]) -> None:
-        '''Update model state after an BN.LID
+        """Update model state after an BN.LID
 
         We need this special case code because of the indirect access to the
         wide-side register file.
 
-        '''
-        assert insn.mnemonic == 'bn.lid'
+        """
+        assert insn.mnemonic == "bn.lid"
         assert len(insn.operands) == len(op_vals)
 
         grd_op, grs1_op, offset_op, grs1_inc_op, grd_inc_op = insn.operands
         exp_shape = (
             # grd
-            isinstance(grd_op.op_type, RegOperandType) and
-            grd_op.op_type.reg_type == 'gpr' and
-            not grd_op.op_type.is_dest() and
+            isinstance(grd_op.op_type, RegOperandType)
+            and grd_op.op_type.reg_type == "gpr"
+            and not grd_op.op_type.is_dest()
+            and
             # grs1
-            isinstance(grs1_op.op_type, RegOperandType) and
-            grs1_op.op_type.reg_type == 'gpr' and
-            not grs1_op.op_type.is_dest() and
+            isinstance(grs1_op.op_type, RegOperandType)
+            and grs1_op.op_type.reg_type == "gpr"
+            and not grs1_op.op_type.is_dest()
+            and
             # offset
-            isinstance(offset_op.op_type, ImmOperandType) and
-            offset_op.op_type.signed and
+            isinstance(offset_op.op_type, ImmOperandType)
+            and offset_op.op_type.signed
+            and
             # grs1_inc
-            isinstance(grs1_inc_op.op_type, OptionOperandType) and
+            isinstance(grs1_inc_op.op_type, OptionOperandType)
+            and
             # grd_inc
             isinstance(grd_inc_op.op_type, OptionOperandType)
         )
         if not exp_shape:
-            raise RuntimeError('Unexpected shape for bn.lid')
+            raise RuntimeError("Unexpected shape for bn.lid")
 
         grd, grs1, offset, grs1_inc, grd_inc = op_vals
 
-        grd_val = self.get_reg('gpr', grd)
+        grd_val = self.get_reg("gpr", grd)
         if grd_val is not None:
-            self.write_reg('wdr', grd_val & 31, None, False)
+            self.write_reg("wdr", grd_val & 31, None, False)
 
         if grs1_inc:
-            grs1_val = self.get_reg('gpr', grs1)
+            grs1_val = self.get_reg("gpr", grs1)
             if grs1_val is not None:
-                self.write_reg('gpr', grs1,
-                               (grs1_val + 32) & ((1 << 32) - 1),
-                               False)
+                self.write_reg("gpr", grs1, (grs1_val + 32) & ((1 << 32) - 1), False)
         elif grd_inc:
-            grd_val = self.get_reg('gpr', grd)
+            grd_val = self.get_reg("gpr", grd)
             if grd_val is not None:
-                self.write_reg('gpr', grd, (grd_val + 1) & 31, False)
+                self.write_reg("gpr", grd, (grd_val + 1) & 31, False)
 
     def update_for_insn(self, prog_insn: ProgInsn) -> None:
         # Apply side-effecting reads (relevant for x1) then mark any
@@ -673,9 +693,9 @@ class Model:
         # result, or a complicated instruction where we have to do something
         # clever, actually set the destination register with a value.
         updaters = {
-            'lui': self.update_for_lui,
-            'addi': self.update_for_addi,
-            'bn.lid': self.update_for_bnlid
+            "lui": self.update_for_lui,
+            "addi": self.update_for_addi,
+            "bn.lid": self.update_for_bnlid,
         }
         updater = updaters.get(insn.mnemonic)
         if updater is not None:

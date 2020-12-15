@@ -12,6 +12,7 @@ from mako.template import Template
 
 class Name(object):
     """We often need to format names in specific ways; this class does so."""
+
     def __add__(self, other):
         return Name(self.parts + other.parts)
 
@@ -102,11 +103,13 @@ class CEnum(object):
         self.finalized = True
 
     def render(self):
-        template = ("typedef enum ${enum.name.as_snake_case()} {\n"
-                    "% for name, value, docstring in enum.constants:\n"
-                    "  ${name.as_c_enum()} = ${value}, /**< ${docstring} */\n"
-                    "% endfor\n"
-                    "} ${enum.name.as_c_type()};")
+        template = (
+            "typedef enum ${enum.name.as_snake_case()} {\n"
+            "% for name, value, docstring in enum.constants:\n"
+            "  ${name.as_c_enum()} = ${value}, /**< ${docstring} */\n"
+            "% endfor\n"
+            "} ${enum.name.as_c_type()};"
+        )
         return Template(template).render(enum=self)
 
 
@@ -123,7 +126,8 @@ class CArrayMapping(object):
     def render_declaration(self):
         template = (
             "extern const ${mapping.output_type_name.as_c_type()}\n"
-            "    ${mapping.name.as_snake_case()}[${len(mapping.mapping)}];")
+            "    ${mapping.name.as_snake_case()}[${len(mapping.mapping)}];"
+        )
         return Template(template).render(mapping=self)
 
     def render_definition(self):
@@ -133,7 +137,8 @@ class CArrayMapping(object):
             "% for in_name, out_name in mapping.mapping.items():\n"
             "  [${in_name.as_c_enum()}] = ${out_name.as_c_enum()},\n"
             "% endfor\n"
-            "};\n")
+            "};\n"
+        )
         return Template(template).render(mapping=self)
 
 
@@ -155,23 +160,38 @@ class TopGenC(object):
         self._init_clkmgr_clocks()
 
     def modules(self):
-        return [(m["name"],
-                 MemoryRegion(self._top_name + Name.from_snake_case(m["name"]),
-                              m["base_addr"], m["size"]))
-                for m in self.top["module"]]
+        return [
+            (
+                m["name"],
+                MemoryRegion(
+                    self._top_name + Name.from_snake_case(m["name"]),
+                    m["base_addr"],
+                    m["size"],
+                ),
+            )
+            for m in self.top["module"]
+        ]
 
     def memories(self):
-        return [(m["name"],
-                 MemoryRegion(self._top_name + Name.from_snake_case(m["name"]),
-                              m["base_addr"], m["size"]))
-                for m in self.top["memory"]]
+        return [
+            (
+                m["name"],
+                MemoryRegion(
+                    self._top_name + Name.from_snake_case(m["name"]),
+                    m["base_addr"],
+                    m["size"],
+                ),
+            )
+            for m in self.top["memory"]
+        ]
 
     def _init_plic_targets(self):
         enum = CEnum(self._top_name + Name(["plic", "target"]))
 
         for core_id in range(int(self.top["num_cores"])):
-            enum.add_constant(Name(["ibex", str(core_id)]),
-                              docstring="Ibex Core {}".format(core_id))
+            enum.add_constant(
+                Name(["ibex", str(core_id)]), docstring="Ibex Core {}".format(core_id)
+            )
 
         enum.add_last_constant("Final PLIC target")
 
@@ -196,12 +216,13 @@ class TopGenC(object):
         interrupts = CEnum(self._top_name + Name(["plic", "irq", "id"]))
         plic_mapping = CArrayMapping(
             self._top_name + Name(["plic", "interrupt", "for", "peripheral"]),
-            sources.name)
+            sources.name,
+        )
 
-        unknown_source = sources.add_constant(Name(["unknown"]),
-                                              docstring="Unknown Peripheral")
-        none_irq_id = interrupts.add_constant(Name(["none"]),
-                                              docstring="No Interrupt")
+        unknown_source = sources.add_constant(
+            Name(["unknown"]), docstring="Unknown Peripheral"
+        )
+        none_irq_id = interrupts.add_constant(Name(["none"]), docstring="No Interrupt")
         plic_mapping.add_entry(none_irq_id, unknown_source)
 
         # When we generate the `interrupts` enum, the only info we have about
@@ -210,8 +231,9 @@ class TopGenC(object):
         source_name_map = {}
 
         for name in self.top["interrupt_module"]:
-            source_name = sources.add_constant(Name.from_snake_case(name),
-                                               docstring=name)
+            source_name = sources.add_constant(
+                Name.from_snake_case(name), docstring=name
+            )
             source_name_map[name] = source_name
 
         sources.add_last_constant("Final PLIC peripheral")
@@ -222,9 +244,9 @@ class TopGenC(object):
             if "width" in intr and int(intr["width"]) != 1:
                 for i in range(int(intr["width"])):
                     name = Name.from_snake_case(intr["name"]) + Name([str(i)])
-                    irq_id = interrupts.add_constant(name,
-                                                     docstring="{} {}".format(
-                                                         intr["name"], i))
+                    irq_id = interrupts.add_constant(
+                        name, docstring="{} {}".format(intr["name"], i)
+                    )
                     source_name = source_name_map[intr["module_name"]]
                     plic_mapping.add_entry(irq_id, source_name)
             else:
@@ -256,8 +278,8 @@ class TopGenC(object):
         sources = CEnum(self._top_name + Name(["alert", "peripheral"]))
         alerts = CEnum(self._top_name + Name(["alert", "id"]))
         alert_mapping = CArrayMapping(
-            self._top_name + Name(["alert", "for", "peripheral"]),
-            sources.name)
+            self._top_name + Name(["alert", "for", "peripheral"]), sources.name
+        )
 
         # When we generate the `alerts` enum, the only info we have about the
         # source is the module name. We'll use `source_name_map` to map a short
@@ -265,8 +287,9 @@ class TopGenC(object):
         source_name_map = {}
 
         for name in self.top["alert_module"]:
-            source_name = sources.add_constant(Name.from_snake_case(name),
-                                               docstring=name)
+            source_name = sources.add_constant(
+                Name.from_snake_case(name), docstring=name
+            )
             source_name_map[name] = source_name
 
         sources.add_last_constant("Final Alert peripheral")
@@ -275,9 +298,9 @@ class TopGenC(object):
             if "width" in alert and int(alert["width"]) != 1:
                 for i in range(int(alert["width"])):
                     name = Name.from_snake_case(alert["name"]) + Name([str(i)])
-                    irq_id = alerts.add_constant(name,
-                                                 docstring="{} {}".format(
-                                                     alert["name"], i))
+                    irq_id = alerts.add_constant(
+                        name, docstring="{} {}".format(alert["name"], i)
+                    )
                     source_name = source_name_map[alert["module_name"]]
                     alert_mapping.add_entry(irq_id, source_name)
             else:
@@ -311,59 +334,58 @@ class TopGenC(object):
         pinmux_info = self.top["pinmux"]
 
         # Peripheral Inputs
-        peripheral_in = CEnum(self._top_name +
-                              Name(["pinmux", "peripheral", "in"]))
+        peripheral_in = CEnum(self._top_name + Name(["pinmux", "peripheral", "in"]))
         for signal in pinmux_info["inouts"] + pinmux_info["inputs"]:
             if "width" in signal and int(signal["width"]) != 1:
                 for i in range(int(signal["width"])):
-                    name = Name.from_snake_case(signal["name"]) + Name(
-                        [str(i)])
-                    peripheral_in.add_constant(name,
-                                               docstring="{} {}".format(
-                                                   signal["name"], i))
+                    name = Name.from_snake_case(signal["name"]) + Name([str(i)])
+                    peripheral_in.add_constant(
+                        name, docstring="{} {}".format(signal["name"], i)
+                    )
             else:
-                peripheral_in.add_constant(Name.from_snake_case(
-                    signal["name"]),
-                                           docstring=signal["name"])
+                peripheral_in.add_constant(
+                    Name.from_snake_case(signal["name"]), docstring=signal["name"]
+                )
         peripheral_in.add_last_constant("Last valid peripheral input")
 
         # Pinmux Input Selects
         insel = CEnum(self._top_name + Name(["pinmux", "insel"]))
-        insel.add_constant(Name(["constant", "zero"]),
-                           docstring="Tie constantly to zero")
-        insel.add_constant(Name(["constant", "one"]),
-                           docstring="Tie constantly to one")
+        insel.add_constant(
+            Name(["constant", "zero"]), docstring="Tie constantly to zero"
+        )
+        insel.add_constant(Name(["constant", "one"]), docstring="Tie constantly to one")
         for i in range(int(pinmux_info["num_mio"])):
-            insel.add_constant(Name(["mio", str(i)]),
-                               docstring="MIO Pad {}".format(i))
+            insel.add_constant(Name(["mio", str(i)]), docstring="MIO Pad {}".format(i))
         insel.add_last_constant("Last valid insel value")
 
         # MIO Outputs
         mio_out = CEnum(self._top_name + Name(["pinmux", "mio", "out"]))
         for i in range(int(pinmux_info["num_mio"])):
-            mio_out.add_constant(Name([str(i)]),
-                                 docstring="MIO Pad {}".format(i))
+            mio_out.add_constant(Name([str(i)]), docstring="MIO Pad {}".format(i))
         mio_out.add_last_constant("Last valid mio output")
 
         # Pinmux Output Selects
         outsel = CEnum(self._top_name + Name(["pinmux", "outsel"]))
-        outsel.add_constant(Name(["constant", "zero"]),
-                            docstring="Tie constantly to zero")
-        outsel.add_constant(Name(["constant", "one"]),
-                            docstring="Tie constantly to one")
-        outsel.add_constant(Name(["constant", "high", "z"]),
-                            docstring="Tie constantly to high-Z")
+        outsel.add_constant(
+            Name(["constant", "zero"]), docstring="Tie constantly to zero"
+        )
+        outsel.add_constant(
+            Name(["constant", "one"]), docstring="Tie constantly to one"
+        )
+        outsel.add_constant(
+            Name(["constant", "high", "z"]), docstring="Tie constantly to high-Z"
+        )
         for signal in pinmux_info["inouts"] + pinmux_info["outputs"]:
             if "width" in signal and int(signal["width"]) != 1:
                 for i in range(int(signal["width"])):
-                    name = Name.from_snake_case(signal["name"]) + Name(
-                        [str(i)])
-                    outsel.add_constant(name,
-                                        docstring="{} {}".format(
-                                            signal["name"], i))
+                    name = Name.from_snake_case(signal["name"]) + Name([str(i)])
+                    outsel.add_constant(
+                        name, docstring="{} {}".format(signal["name"], i)
+                    )
             else:
-                outsel.add_constant(Name.from_snake_case(signal["name"]),
-                                    docstring=signal["name"])
+                outsel.add_constant(
+                    Name.from_snake_case(signal["name"]), docstring=signal["name"]
+                )
         outsel.add_last_constant("Last valid outsel value")
 
         self.pinmux_peripheral_in = peripheral_in
@@ -372,13 +394,13 @@ class TopGenC(object):
         self.pinmux_outsel = outsel
 
     def _init_pwrmgr_wakeups(self):
-        enum = CEnum(self._top_name +
-                     Name(["power", "manager", "wake", "ups"]))
+        enum = CEnum(self._top_name + Name(["power", "manager", "wake", "ups"]))
 
         for signal in self.top["wakeups"]:
             enum.add_constant(
-                Name.from_snake_case(signal["module"]) +
-                Name.from_snake_case(signal["name"]))
+                Name.from_snake_case(signal["module"])
+                + Name.from_snake_case(signal["name"])
+            )
 
         enum.add_last_constant("Last valid pwrmgr wakeup signal")
 
@@ -387,12 +409,10 @@ class TopGenC(object):
     # Enumerates the positions of all software controllable resets
     def _init_rstmgr_sw_rsts(self):
         sw_rsts = [
-            rst for rst in self.top["resets"]["nodes"]
-            if 'sw' in rst and rst['sw'] == 1
+            rst for rst in self.top["resets"]["nodes"] if "sw" in rst and rst["sw"] == 1
         ]
 
-        enum = CEnum(self._top_name +
-                     Name(["reset", "manager", "sw", "resets"]))
+        enum = CEnum(self._top_name + Name(["reset", "manager", "sw", "resets"]))
 
         for rst in sw_rsts:
             enum.add_constant(Name.from_snake_case(rst["name"]))
@@ -402,13 +422,13 @@ class TopGenC(object):
         self.rstmgr_sw_rsts = enum
 
     def _init_pwrmgr_reset_requests(self):
-        enum = CEnum(self._top_name +
-                     Name(["power", "manager", "reset", "requests"]))
+        enum = CEnum(self._top_name + Name(["power", "manager", "reset", "requests"]))
 
         for signal in self.top["reset_requests"]:
             enum.add_constant(
-                Name.from_snake_case(signal["module"]) +
-                Name.from_snake_case(signal["name"]))
+                Name.from_snake_case(signal["module"])
+                + Name.from_snake_case(signal["name"])
+            )
 
         enum.add_last_constant("Last valid pwrmgr reset_request signal")
 
@@ -427,23 +447,21 @@ class TopGenC(object):
         """
 
         aon_clocks = set()
-        for src in self.top['clocks']['srcs'] + self.top['clocks'][
-                'derived_srcs']:
-            if src['aon'] == 'yes':
-                aon_clocks.add(src['name'])
+        for src in self.top["clocks"]["srcs"] + self.top["clocks"]["derived_srcs"]:
+            if src["aon"] == "yes":
+                aon_clocks.add(src["name"])
 
         gateable_clocks = CEnum(self._top_name + Name(["gateable", "clocks"]))
         hintable_clocks = CEnum(self._top_name + Name(["hintable", "clocks"]))
 
         # This replicates the behaviour in `topgen.py` in deriving `hints` and
         # `sw_clocks`.
-        for group in self.top['clocks']['groups']:
-            for (name, source) in group['clocks'].items():
+        for group in self.top["clocks"]["groups"]:
+            for (name, source) in group["clocks"].items():
                 if source not in aon_clocks:
                     # All these clocks start with `clk_` which is redundant.
                     clock_name = Name.from_snake_case(name).remove_part("clk")
-                    docstring = "Clock {} in group {}".format(
-                        name, group['name'])
+                    docstring = "Clock {} in group {}".format(name, group["name"])
                     if group["sw_cg"] == "yes":
                         gateable_clocks.add_constant(clock_name, docstring)
                     elif group["sw_cg"] == "hint":

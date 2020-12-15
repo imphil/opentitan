@@ -19,23 +19,23 @@ def main():
 
     current = Path(__file__).parent.absolute()
 
-    hjson_tpl = Template(filename=str(current / '../data/flash_ctrl.hjson.tpl'))
-    rtl_tpl = Template(filename=str(current / '../data/flash_ctrl.sv.tpl'))
-    pkg_tpl = Template(filename=str(current / '../data/flash_ctrl_pkg.sv.tpl'))
+    hjson_tpl = Template(filename=str(current / "../data/flash_ctrl.hjson.tpl"))
+    rtl_tpl = Template(filename=str(current / "../data/flash_ctrl.sv.tpl"))
+    pkg_tpl = Template(filename=str(current / "../data/flash_ctrl_pkg.sv.tpl"))
 
-    hjson_out = current / '../data/flash_ctrl.hjson'
-    rtl_out = current / '../rtl/flash_ctrl.sv'
-    pkg_out = current / '../rtl/flash_ctrl_pkg.sv'
-    cfgpath = current / '../../../top_earlgrey/data/autogen/top_earlgrey.gen.hjson'
+    hjson_out = current / "../data/flash_ctrl.hjson"
+    rtl_out = current / "../rtl/flash_ctrl.sv"
+    pkg_out = current / "../rtl/flash_ctrl_pkg.sv"
+    cfgpath = current / "../../../top_earlgrey/data/autogen/top_earlgrey.gen.hjson"
 
     try:
-        with open(cfgpath, 'r') as cfg:
+        with open(cfgpath, "r") as cfg:
             topcfg = hjson.load(cfg, use_decimal=True, object_pairs_hook=OrderedDict)
     except ValueError:
         log.error("{} not found".format(cfgpath))
         raise SystemExit(sys.exc_info()[1])
 
-    flash_mems = [mem for mem in topcfg['memory'] if mem['type'] == 'eflash']
+    flash_mems = [mem for mem in topcfg["memory"] if mem["type"] == "eflash"]
     if len(flash_mems) > 1:
         log.error("This design does not currently support multiple flashes")
         return

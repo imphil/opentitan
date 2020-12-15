@@ -40,24 +40,30 @@ def gen_agent(name, has_separate_host_device_driver, root_dir, vendor):
         src_suffix = tup[3]
 
         if has_separate_host_device_driver:
-            if src == "driver": continue
+            if src == "driver":
+                continue
         else:
-            if src == "host_driver": continue
-            if src == "device_driver": continue
+            if src == "host_driver":
+                continue
+            if src == "device_driver":
+                continue
 
-        ftpl = src + src_suffix + '.tpl'
+        ftpl = src + src_suffix + ".tpl"
         fname = src_prefix + src + src_suffix
 
         # read template
-        tpl = Template(filename=resource_filename('uvmdvgen', ftpl))
+        tpl = Template(filename=resource_filename("uvmdvgen", ftpl))
 
-        if not os.path.exists(path_dir): os.system("mkdir -p " + path_dir)
-        with open(path_dir + "/" + fname, 'w') as fout:
+        if not os.path.exists(path_dir):
+            os.system("mkdir -p " + path_dir)
+        with open(path_dir + "/" + fname, "w") as fout:
             try:
                 fout.write(
-                    tpl.render(name=name,
-                               has_separate_host_device_driver=
-                               has_separate_host_device_driver,
-                               vendor=vendor))
+                    tpl.render(
+                        name=name,
+                        has_separate_host_device_driver=has_separate_host_device_driver,
+                        vendor=vendor,
+                    )
+                )
             except:
                 log.error(exceptions.text_error_template().render())

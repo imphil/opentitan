@@ -36,11 +36,11 @@ def get_results(resdir):
         "warnings": [],
         "lint_errors": [],
         "lint_warnings": [],
-        "lint_infos": []
+        "lint_infos": [],
     }
     try:
         # check the report file for lint INFO, WARNING and ERRORs
-        with Path(resdir).joinpath('lint.log').open() as f:
+        with Path(resdir).joinpath("lint.log").open() as f:
             full_file = f.read()
             err_warn_patterns = {
                 # The lint failed error can be ignored, since
@@ -48,23 +48,23 @@ def get_results(resdir):
                 # been found. We have a way of capturing the lint warnings
                 # explicitly in this parsing script, hence this error is redundant
                 # and we decided not to report it in the dashboard.
-                ("errors",
-                 r"^(?!ERROR: Failed to run .* Lint failed)ERROR: .*"),
+                ("errors", r"^(?!ERROR: Failed to run .* Lint failed)ERROR: .*"),
                 ("errors", r"^Error: .*"),
                 ("errors", r"^E .*"),
                 ("errors", r"^F .*"),
                 # TODO(https://github.com/olofk/edalize/issues/90):
                 # this is a workaround until we actually have native Edalize
                 # support for JasperGold and "formal" targets
-                ("warnings",
-                 r"^(?!WARNING: Unknown item formal in section Target)WARNING: .*"
-                 # TODO(https://github.com/lowRISC/ibex/issues/1033):
-                 # remove once this has been fixed in Edalize or in the corefile.
-                 r"^(?!WARNING: Unknown item symbiyosis in section Target)WARNING: .*"
-                 ),
+                (
+                    "warnings",
+                    r"^(?!WARNING: Unknown item formal in section Target)WARNING: .*"
+                    # TODO(https://github.com/lowRISC/ibex/issues/1033):
+                    # remove once this has been fixed in Edalize or in the corefile.
+                    r"^(?!WARNING: Unknown item symbiyosis in section Target)WARNING: .*",
+                ),
                 ("warnings", r"^Warning: .* "),
                 ("warnings", r"^W .*"),
-                ("lint_warnings", r"^.*\[Style:.*")
+                ("lint_warnings", r"^.*\[Style:.*"),
             }
             extract_messages(full_file, err_warn_patterns, results)
     except IOError as err:
@@ -92,30 +92,33 @@ def main():
         'lint_' contain lint-related messages.
 
         The script returns nonzero status if any warnings or errors are present.
-        """)
-    parser.add_argument('--repdir',
-                        type=str,
-                        default="./",
-                        help="""The script searches the 'lint.log'
+        """
+    )
+    parser.add_argument(
+        "--repdir",
+        type=str,
+        default="./",
+        help="""The script searches the 'lint.log'
                         files in this directory.
-                        Defaults to './'""")
+                        Defaults to './'""",
+    )
 
-    parser.add_argument('--outdir',
-                        type=str,
-                        default="./",
-                        help="""
+    parser.add_argument(
+        "--outdir",
+        type=str,
+        default="./",
+        help="""
                         Output directory for the 'results.hjson' file.
-                        Defaults to '%(default)s'""")
+                        Defaults to '%(default)s'""",
+    )
 
     args = parser.parse_args()
     results = get_results(args.repdir)
 
     with Path(args.outdir).joinpath("results.hjson").open("w") as results_file:
-        hjson.dump(results,
-                   results_file,
-                   ensure_ascii=False,
-                   for_json=True,
-                   use_decimal=True)
+        hjson.dump(
+            results, results_file, ensure_ascii=False, for_json=True, use_decimal=True
+        )
 
     # return nonzero status if any warnings or errors are present
     # lint infos do not count as failures

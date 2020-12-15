@@ -30,14 +30,14 @@ depends on the pdftotext utility for Linux.
 # configuration for Galois
 MIN_LFSR_LEN = 4
 MAX_LFSR_LEN = 64
-BASE_URL = 'https://users.ece.cmu.edu/~koopman/lfsr/'
+BASE_URL = "https://users.ece.cmu.edu/~koopman/lfsr/"
 
 # configuration for Fibonacci
-FIB_URL = 'https://www.xilinx.com/support/documentation/application_notes/xapp052.pdf'
-PDF_NAME = 'xapp052'
+FIB_URL = "https://www.xilinx.com/support/documentation/application_notes/xapp052.pdf"
+PDF_NAME = "xapp052"
 LINE_FILTER = [
-    'Table 3: Taps for Maximum-Length LFSR Counters',
-    'XAPP 052 July 7,1996 (Version 1.1)'
+    "Table 3: Taps for Maximum-Length LFSR Counters",
+    "XAPP 052 July 7,1996 (Version 1.1)",
 ]
 
 
@@ -52,23 +52,29 @@ def dump_coeffs(lfsrType, widths, coeffs, outfile):
 
     # select first coefficient in each file and print to SV LUT
     with outfile:
-        decl_str = "localparam int unsigned %s_LUT_OFF = %d;\n" \
-            % (lfsrType, min(widths))
+        decl_str = "localparam int unsigned %s_LUT_OFF = %d;\n" % (
+            lfsrType,
+            min(widths),
+        )
         outfile.write(decl_str)
-        decl_str = "localparam logic [%d:0] %s_COEFFS [%d] = '{ " \
-            % (max(widths) - 1, lfsrType, max(widths)-min(widths)+1)
+        decl_str = "localparam logic [%d:0] %s_COEFFS [%d] = '{ " % (
+            max(widths) - 1,
+            lfsrType,
+            max(widths) - min(widths) + 1,
+        )
         outfile.write(decl_str)
-        comma = ',\n'
-        spaces = ''
+        comma = ",\n"
+        spaces = ""
         for k in widths:
             if k == max(widths):
                 comma = ""
             if k == min(widths) + 1:
                 for l in range(len(decl_str)):
-                    spaces += ' '
-            outfile.write("%s%d'h%s%s" % \
-                (spaces, max(widths), coeffs[k-widths[0]], comma))
-        outfile.write(' };\n')
+                    spaces += " "
+            outfile.write(
+                "%s%d'h%s%s" % (spaces, max(widths), coeffs[k - widths[0]], comma)
+            )
+        outfile.write(" };\n")
 
 
 # converts list with bit positions to a hex bit mask string
@@ -76,7 +82,7 @@ def to_bit_mask(bitPositions):
 
     bitMask = 0
     for b in bitPositions:
-        bitMask += 2**(b - 1)
+        bitMask += 2 ** (b - 1)
 
     return "%X" % bitMask
 
@@ -87,26 +93,29 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         usage=USAGE,
         description=__doc__,
-        epilog='defaults or the filename - can be used for stdin/stdout')
+        epilog="defaults or the filename - can be used for stdin/stdout",
+    )
     parser.add_argument(
-        '-t',
-        '--tempfolder',
+        "-t",
+        "--tempfolder",
         help="""temporary folder to download the lfsr constant files
 to (defaults to lfsr_tmp)""",
-        default='lfsr_tmp')
-    parser.add_argument('--fib',
-                        help='download fibonacci coefficients',
-                        action='store_true')
-    parser.add_argument('-f',
-                        '--force',
-                        help='overwrites tempfolder',
-                        action='store_true')
-    parser.add_argument('-o',
-                        '--output',
-                        type=argparse.FileType('w'),
-                        default=sys.stdout,
-                        metavar='file',
-                        help='Output file (default stdout)')
+        default="lfsr_tmp",
+    )
+    parser.add_argument(
+        "--fib", help="download fibonacci coefficients", action="store_true"
+    )
+    parser.add_argument(
+        "-f", "--force", help="overwrites tempfolder", action="store_true"
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=argparse.FileType("w"),
+        default=sys.stdout,
+        metavar="file",
+        help="Output file (default stdout)",
+    )
 
     args = parser.parse_args()
 
@@ -119,31 +128,30 @@ to (defaults to lfsr_tmp)""",
         os.chdir(args.tempfolder)
 
         if args.fib:
-            lfsrType = 'FIB_XNOR'
+            lfsrType = "FIB_XNOR"
 
             wget.download(FIB_URL)
-            cmd = ['pdftotext %s.pdf' % PDF_NAME, '> %s.txt' % PDF_NAME]
+            cmd = ["pdftotext %s.pdf" % PDF_NAME, "> %s.txt" % PDF_NAME]
             subprocess.call(cmd, shell=True)
             print("")
-            cmd = ['grep -A 350 "%s" %s.txt > table.txt' \
-                % (LINE_FILTER[0], PDF_NAME)]
+            cmd = ['grep -A 350 "%s" %s.txt > table.txt' % (LINE_FILTER[0], PDF_NAME)]
             subprocess.call(cmd, shell=True)
 
             # parse the table
             widths = []
             coeffs = []
             columnType = 0
-            with open('table.txt') as infile:
+            with open("table.txt") as infile:
                 for line in infile:
                     line = line.strip()
                     if line and line not in LINE_FILTER:
-                        if line == 'n':
+                        if line == "n":
                             columnType = 0
                         # yes, this is a typo in the PDF :)
-                        elif line == 'XNOR from':
+                        elif line == "XNOR from":
                             columnType = 1
                         elif columnType:
-                            tmpCoeffs = [int(c) for c in line.split(',')]
+                            tmpCoeffs = [int(c) for c in line.split(",")]
                             coeffs += [tmpCoeffs]
                         else:
                             widths += [int(line)]
@@ -157,10 +165,10 @@ to (defaults to lfsr_tmp)""",
                 coeffs[k] = to_bit_mask(coeffs[k])
 
         else:
-            lfsrType = 'GAL_XOR'
+            lfsrType = "GAL_XOR"
 
             for k in range(MIN_LFSR_LEN, MAX_LFSR_LEN + 1):
-                url = '%s%d.txt' % (BASE_URL, k)
+                url = "%s%d.txt" % (BASE_URL, k)
                 print("\nDownloading %d bit LFSR coeffs from %s..." % (k, url))
                 wget.download(url)
             print("")
@@ -168,7 +176,7 @@ to (defaults to lfsr_tmp)""",
             widths = []
             coeffs = []
             for k in range(MIN_LFSR_LEN, MAX_LFSR_LEN + 1):
-                filename = '%d.txt' % k
+                filename = "%d.txt" % k
                 with open(filename) as infile:
                     # read the first line
                     widths += [k]
@@ -181,5 +189,5 @@ to (defaults to lfsr_tmp)""",
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

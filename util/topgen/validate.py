@@ -34,104 +34,108 @@ from reggen.validate import check_keys
 
 # Required/optional field in top hjson
 top_required = {
-    'name': ['s', 'Top name'],
-    'type': ['s', 'type of hjson. Shall be "top" always'],
-    'clocks': ['g', 'group of clock properties'],
-    'resets': ['l', 'list of resets'],
-    'module': ['l', 'list of modules to instantiate'],
-    'memory': [
-        'l', 'list of memories. At least one memory is needed to run \
-               the software'
+    "name": ["s", "Top name"],
+    "type": ["s", 'type of hjson. Shall be "top" always'],
+    "clocks": ["g", "group of clock properties"],
+    "resets": ["l", "list of resets"],
+    "module": ["l", "list of modules to instantiate"],
+    "memory": [
+        "l",
+        "list of memories. At least one memory is needed to run \
+               the software",
     ],
-    'debug_mem_base_addr':
-    ['d', 'Base address of RV_DM. Planned to move to \
-module'],
-    'xbar': ['l', 'List of the xbar used in the top'],
-    'rnd_cnst_seed': ['int', "Seed for random netlist constant computation"],
+    "debug_mem_base_addr": [
+        "d",
+        "Base address of RV_DM. Planned to move to \
+module",
+    ],
+    "xbar": ["l", "List of the xbar used in the top"],
+    "rnd_cnst_seed": ["int", "Seed for random netlist constant computation"],
 }
 
 top_optional = {
-    'interrupt_module': ['l', 'list of the modules that connects to rv_plic'],
-    'interrupt': ['lnw', 'interrupts (generated)'],
-    'alert_module':
-    ['l', 'list of the modules that connects to alert_handler'],
-    'alert': ['lnw', 'alerts (generated)'],
-    'alert_async': ['l', 'async alerts (generated)'],
-    'pinmux': ['g', 'pinmux definition if doesn\'t exist, tool uses defaults'],
-    'padctrl':
-    ['g', 'PADS instantiation, if doesn\'t exist, tool creates direct output'],
-    'inter_module': ['g', 'define the signal connections between the modules'],
-    'num_cores': ['pn', "number of computing units"],
-    'datawidth': ['pn', "default data width"],
+    "interrupt_module": ["l", "list of the modules that connects to rv_plic"],
+    "interrupt": ["lnw", "interrupts (generated)"],
+    "alert_module": ["l", "list of the modules that connects to alert_handler"],
+    "alert": ["lnw", "alerts (generated)"],
+    "alert_async": ["l", "async alerts (generated)"],
+    "pinmux": ["g", "pinmux definition if doesn't exist, tool uses defaults"],
+    "padctrl": [
+        "g",
+        "PADS instantiation, if doesn't exist, tool creates direct output",
+    ],
+    "inter_module": ["g", "define the signal connections between the modules"],
+    "num_cores": ["pn", "number of computing units"],
+    "datawidth": ["pn", "default data width"],
 }
 
 top_added = {}
 
 pinmux_required = {}
 pinmux_optional = {
-    'num_mio': [
-        'd', 'Number of Multiplexed IOs'
-        ' If padctrl is used, this value will be replaced with #pads'
-        ' - #DIO'
+    "num_mio": [
+        "d",
+        "Number of Multiplexed IOs"
+        " If padctrl is used, this value will be replaced with #pads"
+        " - #DIO",
     ],
-    'dio_modules': ['l', 'List of Dedicated IOs.'],
-    'mio_modules': ['l', 'List of Multiplexed IPs/IOs'],
-    'nc_modules': ['l', 'List of NotConnected IOs'],
+    "dio_modules": ["l", "List of Dedicated IOs."],
+    "mio_modules": ["l", "List of Multiplexed IPs/IOs"],
+    "nc_modules": ["l", "List of NotConnected IOs"],
 }
 pinmux_added = {
-    'inputs': ['l', 'Full list of SoC inputs, `module_name.sig_name`'],
-    'outputs': ['l', 'Full list of SoC outputs, `module_name.sig_name`'],
+    "inputs": ["l", "Full list of SoC inputs, `module_name.sig_name`"],
+    "outputs": ["l", "Full list of SoC outputs, `module_name.sig_name`"],
 }
 
 padctrl_required = {}
 padctrl_optional = {
-    'pads': ['l', 'List of pads'],
-    'attr_default': ['l', 'List of the attribute']
+    "pads": ["l", "List of pads"],
+    "attr_default": ["l", "List of the attribute"],
 }
 padctrl_added = {}
 
 clock_srcs_required = {
-    'name': ['s', 'name of clock group'],
-    'aon': ['s', 'yes, no. aon attribute of a clock'],
-    'freq': ['s', 'frequency of clock in Hz'],
+    "name": ["s", "name of clock group"],
+    "aon": ["s", "yes, no. aon attribute of a clock"],
+    "freq": ["s", "frequency of clock in Hz"],
 }
 
 clock_srcs_optional = {
-    'derived': ['s', 'whether clock is derived'],
-    'params': ['s', 'extra clock parameters']
+    "derived": ["s", "whether clock is derived"],
+    "params": ["s", "extra clock parameters"],
 }
 
 derived_clock_srcs_required = {
-    'name': ['s', 'name of clock group'],
-    'aon': ['s', 'yes, no. aon attribute of a clock'],
-    'freq': ['s', 'frequency of clock in Hz'],
-    'src': ['s', 'source clock'],
-    'div': ['d', 'ratio between source clock and derived clock'],
+    "name": ["s", "name of clock group"],
+    "aon": ["s", "yes, no. aon attribute of a clock"],
+    "freq": ["s", "frequency of clock in Hz"],
+    "src": ["s", "source clock"],
+    "div": ["d", "ratio between source clock and derived clock"],
 }
 
 clock_groups_required = {
-    'name': ['s', 'name of clock group'],
-    'src': ['s', 'yes, no. This clock group is directly from source'],
-    'sw_cg': ['s', 'yes, no, hint. Software clock gate attributes'],
+    "name": ["s", "name of clock group"],
+    "src": ["s", "yes, no. This clock group is directly from source"],
+    "sw_cg": ["s", "yes, no, hint. Software clock gate attributes"],
 }
 clock_groups_optional = {
-    'unique': ['s', 'whether clocks in the group are unique'],
-    'clocks': ['g', 'groups of clock name to source'],
+    "unique": ["s", "whether clocks in the group are unique"],
+    "clocks": ["g", "groups of clock name to source"],
 }
 clock_groups_added = {}
 
 eflash_required = {
-    'banks': ['d', 'number of flash banks'],
-    'pages_per_bank': ['d', 'number of data pages per flash bank'],
-    'program_resolution':
-    ['d', 'maximum number of flash words allowed to program'],
-    'clock_srcs': ['g', 'clock connections'],
-    'clock_group': ['s', 'associated clock attribute group'],
-    'reset_connections': ['g', 'reset connections'],
-    'type': ['s', 'type of memory'],
-    'base_addr': ['s', 'strarting hex address of memory'],
-    'swaccess': ['s', 'software accessibility'],
-    'inter_signal_list': ['lg', 'intersignal list']
+    "banks": ["d", "number of flash banks"],
+    "pages_per_bank": ["d", "number of data pages per flash bank"],
+    "program_resolution": ["d", "maximum number of flash words allowed to program"],
+    "clock_srcs": ["g", "clock connections"],
+    "clock_group": ["s", "associated clock attribute group"],
+    "reset_connections": ["g", "reset connections"],
+    "type": ["s", "type of memory"],
+    "base_addr": ["s", "strarting hex address of memory"],
+    "swaccess": ["s", "software accessibility"],
+    "inter_signal_list": ["lg", "intersignal list"],
 }
 
 eflash_optional = {}
@@ -145,8 +149,8 @@ class TargetType(Enum):
 
 
 class Target:
-    """Target class informs the checkers if we are validating a module or xbar
-    """
+    """Target class informs the checkers if we are validating a module or xbar"""
+
     def __init__(self, target_type):
         # The type of this target
         self.target_type = target_type
@@ -159,16 +163,17 @@ class Target:
 
 class Flash:
     """Flash class contains information regarding parameter defaults.
-       For now, only expose banks / pages_per_bank for user configuration.
-       For now, also enforce power of 2 requiremnt.
+    For now, only expose banks / pages_per_bank for user configuration.
+    For now, also enforce power of 2 requiremnt.
     """
+
     max_banks = 4
     max_pages_per_bank = 1024
 
     def __init__(self, mem):
-        self.banks = mem['banks']
-        self.pages_per_bank = mem['pages_per_bank']
-        self.program_resolution = mem['program_resolution']
+        self.banks = mem["banks"]
+        self.pages_per_bank = mem["pages_per_bank"]
+        self.program_resolution = mem["program_resolution"]
         self.words_per_page = 128
         self.data_width = 64
         self.metadata_width = 12
@@ -179,10 +184,14 @@ class Flash:
         return (n != 0) and (n & (n - 1) == 0)
 
     def check_values(self):
-        pow2_check = self.is_pow2(self.banks) and self.is_pow2(self.pages_per_bank) and \
-        self.is_pow2(self.program_resolution)
-        limit_check = (self.banks <= Flash.max_banks) \
-            and (self.pages_per_bank <= Flash.max_pages_per_bank)
+        pow2_check = (
+            self.is_pow2(self.banks)
+            and self.is_pow2(self.pages_per_bank)
+            and self.is_pow2(self.program_resolution)
+        )
+        limit_check = (self.banks <= Flash.max_banks) and (
+            self.pages_per_bank <= Flash.max_pages_per_bank
+        )
 
         return pow2_check and limit_check
 
@@ -193,15 +202,15 @@ class Flash:
         return bytes_per_bank * self.banks
 
     def populate(self, mem):
-        mem['words_per_page'] = self.words_per_page
-        mem['data_width'] = self.data_width
-        mem['metadata_width'] = self.metadata_width
-        mem['info_types'] = self.info_types
-        mem['infos_per_bank'] = self.infos_per_bank
-        mem['size'] = hex(int(self.calc_size()))
+        mem["words_per_page"] = self.words_per_page
+        mem["data_width"] = self.data_width
+        mem["metadata_width"] = self.metadata_width
+        mem["info_types"] = self.info_types
+        mem["infos_per_bank"] = self.infos_per_bank
+        mem["size"] = hex(int(self.calc_size()))
 
         word_bytes = self.data_width / 8
-        mem['pgm_resolution_bytes'] = int(self.program_resolution * word_bytes)
+        mem["pgm_resolution_bytes"] = int(self.program_resolution * word_bytes)
 
 
 # Check to see if each module/xbar defined in top.hjson exists as ip/xbar.hjson
@@ -213,15 +222,15 @@ def check_target(top, objs, tgtobj):
     idxs = OrderedDict()
 
     for i in range(len(objs)):
-        log.info("%d Order is %s" % (i, objs[i]['name'].lower()))
+        log.info("%d Order is %s" % (i, objs[i]["name"].lower()))
 
     tgt_type = tgtobj.target_type.value
     inst_key = tgtobj.key
 
     for cfg in top[tgt_type]:
-        cfg_name = cfg['name'].lower()
+        cfg_name = cfg["name"].lower()
         log.info("Checking target %s %s" % (tgt_type, cfg_name))
-        tgt_def = [o for o in objs if cfg[inst_key] == o['name'].lower()]
+        tgt_def = [o for o in objs if cfg[inst_key] == o["name"].lower()]
         error += check_def(tgt_def, cfg_name)
         if error:
             log.error("Target existence check failed")
@@ -234,8 +243,13 @@ def check_target(top, objs, tgtobj):
 
 
 def check_padctrl(top, prefix):
-    error = check_keys(top["padctrl"], padctrl_required, padctrl_optional,
-                       padctrl_added, prefix + " PadControl")
+    error = check_keys(
+        top["padctrl"],
+        padctrl_required,
+        padctrl_optional,
+        padctrl_added,
+        prefix + " PadControl",
+    )
     return error
 
 
@@ -247,29 +261,36 @@ def check_pinmux(top, prefix):
 def check_clock_groups(top):
 
     # default empty assignment
-    if "groups" not in top['clocks']:
-        top['clocks']['groups'] = []
+    if "groups" not in top["clocks"]:
+        top["clocks"]["groups"] = []
 
     error = 0
-    for group in top['clocks']['groups']:
-        error = check_keys(group, clock_groups_required, clock_groups_optional,
-                           clock_groups_added, "Clock Groups")
+    for group in top["clocks"]["groups"]:
+        error = check_keys(
+            group,
+            clock_groups_required,
+            clock_groups_optional,
+            clock_groups_added,
+            "Clock Groups",
+        )
 
         # Check sw_cg values are valid
-        if group['sw_cg'] not in ['yes', 'no', 'hint']:
-            log.error("Incorrect attribute for sw_cg: {}".format(
-                group['sw_cg']))
+        if group["sw_cg"] not in ["yes", "no", "hint"]:
+            log.error("Incorrect attribute for sw_cg: {}".format(group["sw_cg"]))
             error += 1
 
         # Check combination of src and sw are valid
-        if group['src'] == 'yes' and group['sw_cg'] != 'no':
-            log.error("Invalid combination of src and sw_cg: {} and {}".format(
-                group['src'], group['sw_cg']))
+        if group["src"] == "yes" and group["sw_cg"] != "no":
+            log.error(
+                "Invalid combination of src and sw_cg: {} and {}".format(
+                    group["src"], group["sw_cg"]
+                )
+            )
             error += 1
 
         # Check combination of sw_cg and unique are valid
-        unique = group['unique'] if 'unique' in group else 'no'
-        if group['sw_cg'] == 'no' and unique != 'no':
+        unique = group["unique"] if "unique" in group else "no"
+        if group["sw_cg"] == "no" and unique != "no":
             log.error(
                 "Incorrect attribute combination.  When sw_cg is no, unique must be no"
             )
@@ -287,32 +308,29 @@ def check_clocks_resets(top, ipobjs, ip_idxs, xbarobjs, xbar_idxs):
 
     # check clock fields are all there
     ext_srcs = []
-    for src in top['clocks']['srcs']:
-        check_keys(src, clock_srcs_required, clock_srcs_optional, {},
-                   "Clock source")
-        ext_srcs.append(src['name'])
+    for src in top["clocks"]["srcs"]:
+        check_keys(src, clock_srcs_required, clock_srcs_optional, {}, "Clock source")
+        ext_srcs.append(src["name"])
 
     # check derived clock sources
     log.info("Collected clocks are {}".format(ext_srcs))
-    for src in top['clocks']['derived_srcs']:
+    for src in top["clocks"]["derived_srcs"]:
         check_keys(src, derived_clock_srcs_required, {}, {}, "Derived clocks")
         try:
-            ext_srcs.index(src['src'])
+            ext_srcs.index(src["src"])
         except Exception:
             error += 1
-            log.error("{} is not a valid src for {}".format(
-                src['src'], src['name']))
+            log.error("{} is not a valid src for {}".format(src["src"], src["name"]))
 
     # all defined clock/reset nets
-    reset_nets = [reset['name'] for reset in top['resets']['nodes']]
+    reset_nets = [reset["name"] for reset in top["resets"]["nodes"]]
     clock_srcs = [
-        clock['name']
-        for clock in top['clocks']['srcs'] + top['clocks']['derived_srcs']
+        clock["name"] for clock in top["clocks"]["srcs"] + top["clocks"]["derived_srcs"]
     ]
 
     # Check clock/reset port connection for all IPs
-    for ipcfg in top['module']:
-        ipcfg_name = ipcfg['name'].lower()
+    for ipcfg in top["module"]:
+        ipcfg_name = ipcfg["name"].lower()
         log.info("Checking clock/resets for %s" % ipcfg_name)
         error += validate_reset(ipcfg, ipobjs[ip_idxs[ipcfg_name]], reset_nets)
         error += validate_clock(ipcfg, ipobjs[ip_idxs[ipcfg_name]], clock_srcs)
@@ -322,13 +340,15 @@ def check_clocks_resets(top, ipobjs, ip_idxs, xbarobjs, xbar_idxs):
             break
 
     # Check clock/reset port connection for all xbars
-    for xbarcfg in top['xbar']:
-        xbarcfg_name = xbarcfg['name'].lower()
+    for xbarcfg in top["xbar"]:
+        xbarcfg_name = xbarcfg["name"].lower()
         log.info("Checking clock/resets for xbar %s" % xbarcfg_name)
-        error += validate_reset(xbarcfg, xbarobjs[xbar_idxs[xbarcfg_name]],
-                                reset_nets, "xbar")
-        error += validate_clock(xbarcfg, xbarobjs[xbar_idxs[xbarcfg_name]],
-                                clock_srcs, "xbar")
+        error += validate_reset(
+            xbarcfg, xbarobjs[xbar_idxs[xbarcfg_name]], reset_nets, "xbar"
+        )
+        error += validate_clock(
+            xbarcfg, xbarobjs[xbar_idxs[xbarcfg_name]], clock_srcs, "xbar"
+        )
 
         if error:
             log.error("xbar clock/reset checking failed")
@@ -358,43 +378,41 @@ def validate_reset(top, inst, reset_nets, prefix=""):
     # Gather inst port list
     error = 0
     inst_port_list = []
-    if 'reset_primary' not in inst.keys():
-        log.info("%s %s does not have a reset_primary defined, default used" %
-                 (prefix, inst['name']))
+    if "reset_primary" not in inst.keys():
+        log.info(
+            "%s %s does not have a reset_primary defined, default used"
+            % (prefix, inst["name"])
+        )
         inst_port_list.append("rst_ni")
     else:
-        inst_port_list.append(inst['reset_primary'])
+        inst_port_list.append(inst["reset_primary"])
 
-    if 'other_reset_list' in inst.keys():
-        inst_port_list.extend(inst['other_reset_list'])
-    log.info("%s %s resets are %s" %
-             (prefix, inst['name'].lower(), inst_port_list))
+    if "other_reset_list" in inst.keys():
+        inst_port_list.extend(inst["other_reset_list"])
+    log.info("%s %s resets are %s" % (prefix, inst["name"].lower(), inst_port_list))
 
-    if len(top['reset_connections'].keys()) != len(inst_port_list):
+    if len(top["reset_connections"].keys()) != len(inst_port_list):
         error += 1
-        log.error("%s %s mismatched number of reset ports and nets" %
-                  (prefix, inst['name']))
+        log.error(
+            "%s %s mismatched number of reset ports and nets" % (prefix, inst["name"])
+        )
 
     missing_port = [
-        port for port in top['reset_connections'].keys()
-        if port not in inst_port_list
+        port for port in top["reset_connections"].keys() if port not in inst_port_list
     ]
 
     if missing_port:
         error += 1
-        log.error("%s %s Following reset ports do not exist:" %
-                  (prefix, inst['name']))
+        log.error("%s %s Following reset ports do not exist:" % (prefix, inst["name"]))
         [log.error("%s" % port) for port in missing_port]
 
     missing_net = [
-        net for port, net in top['reset_connections'].items()
-        if net not in reset_nets
+        net for port, net in top["reset_connections"].items() if net not in reset_nets
     ]
 
     if missing_net:
         error += 1
-        log.error("%s %s Following reset nets do not exist:" %
-                  (prefix, inst['name']))
+        log.error("%s %s Following reset nets do not exist:" % (prefix, inst["name"]))
         [log.error("%s" % net) for net in missing_net]
 
     return error
@@ -408,41 +426,41 @@ def validate_clock(top, inst, clock_srcs, prefix=""):
     # Gather inst port list
     error = 0
     inst_port_list = []
-    if 'clock_primary' not in inst.keys():
-        log.info("%s %s does not have a clock_primary defined, default used" %
-                 (prefix, inst['name']))
+    if "clock_primary" not in inst.keys():
+        log.info(
+            "%s %s does not have a clock_primary defined, default used"
+            % (prefix, inst["name"])
+        )
         inst_port_list.append("clk_i")
     else:
-        inst_port_list.append(inst['clock_primary'])
+        inst_port_list.append(inst["clock_primary"])
 
-    if 'other_clock_list' in inst.keys():
-        inst_port_list.extend(inst['other_clock_list'])
-    log.info("%s %s clocks are %s" %
-             (prefix, inst['name'].lower(), inst_port_list))
+    if "other_clock_list" in inst.keys():
+        inst_port_list.extend(inst["other_clock_list"])
+    log.info("%s %s clocks are %s" % (prefix, inst["name"].lower(), inst_port_list))
 
-    if len(top['clock_srcs'].keys()) != len(inst_port_list):
+    if len(top["clock_srcs"].keys()) != len(inst_port_list):
         error += 1
-        log.error("%s %s mismatched number of clock ports and nets" %
-                  (prefix, inst['name']))
+        log.error(
+            "%s %s mismatched number of clock ports and nets" % (prefix, inst["name"])
+        )
 
     missing_port = [
-        port for port in top['clock_srcs'].keys() if port not in inst_port_list
+        port for port in top["clock_srcs"].keys() if port not in inst_port_list
     ]
 
     if missing_port:
         error += 1
-        log.error("%s %s Following clock ports do not exist:" %
-                  (prefix, inst['name']))
+        log.error("%s %s Following clock ports do not exist:" % (prefix, inst["name"]))
         [log.error("%s" % port) for port in missing_port]
 
     missing_net = [
-        net for port, net in top['clock_srcs'].items() if net not in clock_srcs
+        net for port, net in top["clock_srcs"].items() if net not in clock_srcs
     ]
 
     if missing_net:
         error += 1
-        log.error("%s %s Following clock nets do not exist:" %
-                  (prefix, inst['name']))
+        log.error("%s %s Following clock nets do not exist:" % (prefix, inst["name"]))
         [log.error("%s" % net) for net in missing_net]
 
     return error
@@ -451,10 +469,11 @@ def validate_clock(top, inst, clock_srcs, prefix=""):
 def check_flash(top):
     error = 0
 
-    for mem in top['memory']:
-        if mem['type'] == "eflash":
-            error = check_keys(mem, eflash_required, eflash_optional,
-                               eflash_added, "Eflash")
+    for mem in top["memory"]:
+        if mem["type"] == "eflash":
+            error = check_keys(
+                mem, eflash_required, eflash_optional, eflash_added, "Eflash"
+            )
 
     flash = Flash(mem)
     error += 1 if not flash.check_values() else 0
@@ -471,37 +490,45 @@ def check_power_domains(top):
     error = 0
 
     # check that the default domain is valid
-    if top['power']['default'] not in top['power']['domains']:
+    if top["power"]["default"] not in top["power"]["domains"]:
         error += 1
         return error
 
     # check that power domain definition is consistent with reset and module definition
-    for reset in top['resets']['nodes']:
-        if reset['gen']:
-            if 'domains' not in reset:
-                log.error("{} missing domain definition".format(reset['name']))
+    for reset in top["resets"]["nodes"]:
+        if reset["gen"]:
+            if "domains" not in reset:
+                log.error("{} missing domain definition".format(reset["name"]))
                 error += 1
                 return error
             else:
-                for domain in reset['domains']:
-                    if domain not in top['power']['domains']:
-                        log.error("{} defined invalid domain {}".format(
-                            reset['name'], domain))
+                for domain in reset["domains"]:
+                    if domain not in top["power"]["domains"]:
+                        log.error(
+                            "{} defined invalid domain {}".format(reset["name"], domain)
+                        )
                         error += 1
                         return error
 
     # Check that each module, xbar, memory has a power domain defined.
     # If not, give it a default.
     # If there is one defined, check that it is a valid definition
-    for end_point in top['module'] + top['memory'] + top['xbar']:
-        if 'domain' not in end_point:
-            log.warning("{} does not have a power domain defined, \
-            assigning default".format(end_point['name']))
+    for end_point in top["module"] + top["memory"] + top["xbar"]:
+        if "domain" not in end_point:
+            log.warning(
+                "{} does not have a power domain defined, \
+            assigning default".format(
+                    end_point["name"]
+                )
+            )
 
-            end_point['domain'] = top['power']['default']
-        elif end_point['domain'] not in top['power']['domains']:
-            log.error("{} defined invalid domain {}".format(
-                end_point['name'], end_point['domain']))
+            end_point["domain"] = top["power"]["default"]
+        elif end_point["domain"] not in top["power"]["domains"]:
+            log.error(
+                "{} defined invalid domain {}".format(
+                    end_point["name"], end_point["domain"]
+                )
+            )
             error += 1
             return error
 
@@ -517,7 +544,7 @@ def validate_top(top, ipobjs, xbarobjs):
         log.error("Top HJSON has top level errors. Aborting")
         return top, error
 
-    component = top['name']
+    component = top["name"]
 
     # MODULE check
     err, ip_idxs = check_target(top, ipobjs, Target(TargetType.MODULE))
@@ -543,16 +570,20 @@ def validate_top(top, ipobjs, xbarobjs):
 
     # PINMUX & PADS check
     if "padctrl" not in top:
-        log.warning("padsctrl field doesn't exist in top. Skipping pads \
+        log.warning(
+            "padsctrl field doesn't exist in top. Skipping pads \
                      generation. Top input/output are directly connected from \
-                     peripherals.")
+                     peripherals."
+        )
     # Pads configuration check
     else:
         error += check_padctrl(top, component)
 
     if "pinmux" not in top:
-        log.warning("Top {} has no 'pinmux' field. Please consider specifying \
-                        pinmux and pads configuration")
+        log.warning(
+            "Top {} has no 'pinmux' field. Please consider specifying \
+                        pinmux and pads configuration"
+        )
         top["pinmux"] = OrderedDict()
     # checking pinmux after pads as dio connects to PAD
 

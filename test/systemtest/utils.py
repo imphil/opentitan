@@ -18,13 +18,15 @@ log = logging.getLogger(__name__)
 
 
 class Process:
-    def __init__(self,
-                 cmd,
-                 logdir,
-                 cwd=None,
-                 startup_done_expect=None,
-                 startup_timeout=None,
-                 default_filter_func=None):
+    def __init__(
+        self,
+        cmd,
+        logdir,
+        cwd=None,
+        startup_done_expect=None,
+        startup_timeout=None,
+        default_filter_func=None,
+    ):
         """Utility class used to spawn an interact with processes.
 
         Args:
@@ -65,7 +67,7 @@ class Process:
             pass
 
     def is_running(self):
-        """ Check if the process is running
+        """Check if the process is running
 
         Returns:
            True if the process is running, False otherwise
@@ -81,28 +83,28 @@ class Process:
         # a 4kB buffer before we see any output, which prevents searching for
         # the string indicating a successful startup.
         # see discussion at http://www.pixelbeat.org/programming/stdio_buffering/
-        cmd = ['stdbuf', '-oL'] + self.cmd
-        self.logger.info("Running command " + ' '.join(cmd))
+        cmd = ["stdbuf", "-oL"] + self.cmd
+        self.logger.info("Running command " + " ".join(cmd))
 
-        logfile_stdout = os.path.join(self.logdir,
-                                      "{}.stdout".format(cmd_name))
-        logfile_stderr = os.path.join(self.logdir,
-                                      "{}.stderr".format(cmd_name))
+        logfile_stdout = os.path.join(self.logdir, "{}.stdout".format(cmd_name))
+        logfile_stderr = os.path.join(self.logdir, "{}.stderr".format(cmd_name))
         self.logger.debug("Capturing STDOUT at " + logfile_stdout)
         self.logger.debug("Capturing STDERR at " + logfile_stderr)
 
-        self._f_stdout = open(logfile_stdout, 'w')
-        self._f_stderr = open(logfile_stderr, 'w')
-        self.proc = subprocess.Popen(cmd,
-                                     cwd=self.cwd,
-                                     universal_newlines=True,
-                                     bufsize=1,  # Use line buffering
-                                     stdin=subprocess.PIPE,
-                                     stdout=self._f_stdout,
-                                     stderr=self._f_stderr)
+        self._f_stdout = open(logfile_stdout, "w")
+        self._f_stderr = open(logfile_stderr, "w")
+        self.proc = subprocess.Popen(
+            cmd,
+            cwd=self.cwd,
+            universal_newlines=True,
+            bufsize=1,  # Use line buffering
+            stdin=subprocess.PIPE,
+            stdout=self._f_stdout,
+            stderr=self._f_stderr,
+        )
 
-        self._f_stdout_r = open(logfile_stdout, 'r')
-        self._f_stderr_r = open(logfile_stderr, 'r')
+        self._f_stdout_r = open(logfile_stdout, "r")
+        self._f_stderr_r = open(logfile_stderr, "r")
 
         # no startup match pattern given => startup done!
         if self.startup_done_expect is None:
@@ -111,11 +113,15 @@ class Process:
         # check if the string indicating a successful startup appears in the
         # the program output (STDOUT or STDERR).
         try:
-            init_done = self.find_in_output(pattern=self.startup_done_expect,
-                                            timeout=self.startup_timeout)
+            init_done = self.find_in_output(
+                pattern=self.startup_done_expect, timeout=self.startup_timeout
+            )
             if init_done is None:
-                raise RuntimeError('No match for pattern {!r} in startup.'
-                                   .format(str(self.startup_done_expect)))
+                raise RuntimeError(
+                    "No match for pattern {!r} in startup.".format(
+                        str(self.startup_done_expect)
+                    )
+                )
         except subprocess.TimeoutExpired as err:
             # On time-out, find_in_output will raise a TimeoutExpired exception
             # but (of course) it doesn't know the command it's running, so we
@@ -164,11 +170,7 @@ class Process:
 
         return self.find_in_output(pattern, timeout) is not None
 
-    def find_in_output(self,
-                       pattern,
-                       timeout,
-                       from_start=False,
-                       filter_func=None):
+    def find_in_output(self, pattern, timeout, from_start=False, filter_func=None):
         """Read STDOUT and STDERR to find an expected pattern.
 
         See find_in_files() for more documentation.
@@ -178,7 +180,7 @@ class Process:
             filter_func = self.default_filter_func
 
         def wait_func():
-            """ Wait up to 0.2s until the process terminates.
+            """Wait up to 0.2s until the process terminates.
 
             Returns:
                 True if the subprocess terminated and a further wait will not
@@ -193,32 +195,32 @@ class Process:
             # The process did terminate.
             return True
 
-        return find_in_files([self._f_stdout_r, self._f_stderr_r],
-                             pattern,
-                             timeout,
-                             filter_func=filter_func,
-                             from_start=from_start,
-                             wait_func=wait_func)
+        return find_in_files(
+            [self._f_stdout_r, self._f_stderr_r],
+            pattern,
+            timeout,
+            filter_func=filter_func,
+            from_start=from_start,
+            wait_func=wait_func,
+        )
 
 
 class LoggingSerial(serial.Serial):
     """ Acess to a serial console which logs all read/written data to file. """
-    def __init__(self,
-                 *args,
-                 log_dir_path,
-                 default_filter_func=None,
-                 **kwargs):
+
+    def __init__(self, *args, log_dir_path, default_filter_func=None, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._log_to_device_fp = open(str(log_dir_path / 'to-device.log'),
-                                      'wb')
-        self._log_from_device_fp = open(str(log_dir_path / 'from-device.log'),
-                                        'wb')
+        self._log_to_device_fp = open(str(log_dir_path / "to-device.log"), "wb")
+        self._log_from_device_fp = open(str(log_dir_path / "from-device.log"), "wb")
 
         self.default_filter_func = default_filter_func
 
-        log.debug("Logging UART communication for {} to {}".format(
-            self.port, str(log_dir_path)))
+        log.debug(
+            "Logging UART communication for {} to {}".format(
+                self.port, str(log_dir_path)
+            )
+        )
 
     def read(self, size=1):
         bytes = super().read(size)
@@ -253,12 +255,12 @@ class LoggingSerial(serial.Serial):
 
     def log_add_marker(self, text: str):
         """ Write a marker text into the UART send and receive log files """
-        text_b = text.encode('UTF-8')
+        text_b = text.encode("UTF-8")
         self._log_to_device_fp.write(text_b)
         self._log_from_device_fp.write(text_b)
 
-    def drain_in(self, timeout=None, silence_time=.5):
-        """ Read all available input data
+    def drain_in(self, timeout=None, silence_time=0.5):
+        """Read all available input data
 
         Args:
             timeout: Maximum time this function blocks, in seconds.
@@ -271,7 +273,7 @@ class LoggingSerial(serial.Serial):
         if timeout is not None:
             t_end = time.time() + timeout
 
-        read_data = b''
+        read_data = b""
 
         first_iteration = True
         while first_iteration or self.in_waiting != 0:
@@ -285,7 +287,7 @@ class LoggingSerial(serial.Serial):
         return read_data
 
     def find_in_output(self, pattern, timeout=None, filter_func=None):
-        """ Expect a pattern to appear in one of the output lines.
+        """Expect a pattern to appear in one of the output lines.
 
         See the documentation of match_line() for a description of |pattern|.
 
@@ -322,22 +324,19 @@ class LoggingSerial(serial.Serial):
 
 def dump_temp_files(tmp_path):
     """ Dump all files in a directory (typically logs) """
-    logging.debug(
-        "================= DUMP OF ALL TEMPORARY FILES =================")
+    logging.debug("================= DUMP OF ALL TEMPORARY FILES =================")
 
     tmp_files = [
-        Path(root) / f for root, dirs, files in os.walk(str(tmp_path))
-        for f in files
+        Path(root) / f for root, dirs, files in os.walk(str(tmp_path)) for f in files
     ]
 
-    textchars = bytearray({7, 8, 9, 10, 12, 13, 27} |
-                          set(range(0x20, 0x100)) - {0x7f})
+    textchars = bytearray({7, 8, 9, 10, 12, 13, 27} | set(range(0x20, 0x100)) - {0x7F})
 
     def is_binary_string(bytes):
         return bool(bytes.translate(None, textchars))
 
     for f in tmp_files:
-        if f.name == '.lock':
+        if f.name == ".lock":
             continue
 
         logging.debug("vvvvvvvvvvvvvvvvvvvv {} vvvvvvvvvvvvvvvvvvvv".format(f))
@@ -345,32 +344,34 @@ def dump_temp_files(tmp_path):
         if not f.is_file():
             logging.debug("[Not a regular file.]")
         elif f.stat().st_size > 50 * 1024:
-            logging.debug("[File is too large to be shown ({} bytes).]".format(
-                f.stat().st_size))
+            logging.debug(
+                "[File is too large to be shown ({} bytes).]".format(f.stat().st_size)
+            )
         else:
-            with open(str(f), 'rb') as fp:
+            with open(str(f), "rb") as fp:
                 data = fp.read(1024)
                 if is_binary_string(data):
                     logging.debug(
                         "[File contains {} bytes of binary data.]".format(
-                            f.stat().st_size))
+                            f.stat().st_size
+                        )
+                    )
                 else:
                     fp.seek(0)
                     for line in fp:
-                        line_str = line.decode(locale.getpreferredencoding(),
-                                               errors='backslashreplace')
+                        line_str = line.decode(
+                            locale.getpreferredencoding(), errors="backslashreplace"
+                        )
                         logging.debug(line_str.rstrip())
-        logging.debug(
-            "^^^^^^^^^^^^^^^^^^^^ {} ^^^^^^^^^^^^^^^^^^^^\n".format(f))
+        logging.debug("^^^^^^^^^^^^^^^^^^^^ {} ^^^^^^^^^^^^^^^^^^^^\n".format(f))
 
 
 def load_sw_over_spi(tmp_path, spiflash_path, sw_test_bin, spiflash_args=[]):
     """ Use the spiflash utility to load software onto a device. """
 
-    log.info("Flashing device software from {} over SPI".format(
-        str(sw_test_bin)))
+    log.info("Flashing device software from {} over SPI".format(str(sw_test_bin)))
 
-    cmd_flash = [spiflash_path, '--input', sw_test_bin] + spiflash_args
+    cmd_flash = [spiflash_path, "--input", sw_test_bin] + spiflash_args
     p_flash = Process(cmd_flash, logdir=tmp_path, cwd=tmp_path)
     p_flash.run()
     p_flash.proc.wait(timeout=600)
@@ -379,12 +380,9 @@ def load_sw_over_spi(tmp_path, spiflash_path, sw_test_bin, spiflash_args=[]):
     log.info("Device software flashed.")
 
 
-def find_in_files(file_objects,
-                  pattern,
-                  timeout,
-                  from_start=False,
-                  filter_func=None,
-                  wait_func=None):
+def find_in_files(
+    file_objects, pattern, timeout, from_start=False, filter_func=None, wait_func=None
+):
     """Find a pattern in a list of file objects (file descriptors)
 
     See the documentation of match_line() for a description of |pattern|.
@@ -418,7 +416,7 @@ def find_in_files(file_objects,
     if wait_func is None:
         # By default, sleep for 200 ms when waiting for new input.
         def wait_func():
-            time.sleep(.2)
+            time.sleep(0.2)
             return False
 
     if from_start:
@@ -462,9 +460,9 @@ def match_line(line, pattern, filter_func=None):
     """
 
     if isinstance(line, bytes):
-        line = line.rstrip(b'\r\n')
+        line = line.rstrip(b"\r\n")
     else:
-        line = line.rstrip('\r\n')
+        line = line.rstrip("\r\n")
 
     if filter_func is not None:
         line = filter_func(line)
@@ -486,8 +484,8 @@ def filter_remove_device_sw_log_prefix(line):
     """
 
     # See base_log_internal_core() in lib/base/log.c for the format description.
-    pattern = r'^[IWEF?]\d{5} [a-zA-Z0-9\.-_]+:\d+\] '
+    pattern = r"^[IWEF?]\d{5} [a-zA-Z0-9\.-_]+:\d+\] "
     if isinstance(line, bytes):
-        return re.sub(bytes(pattern, encoding='utf-8'), b'', line)
+        return re.sub(bytes(pattern, encoding="utf-8"), b"", line)
     else:
-        return re.sub(pattern, '', line)
+        return re.sub(pattern, "", line)

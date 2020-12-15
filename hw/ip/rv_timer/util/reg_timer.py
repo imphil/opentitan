@@ -14,19 +14,21 @@ from mako.template import Template
 def main():
     parser = argparse.ArgumentParser(prog="reg_timer")
     parser.add_argument(
-        'input',
-        nargs='?',
-        metavar='file',
-        type=argparse.FileType('r'),
+        "input",
+        nargs="?",
+        metavar="file",
+        type=argparse.FileType("r"),
         default=sys.stdin,
-        help='input template file')
-    parser.add_argument('--harts', '-s', type=int, help='Number of Harts')
+        help="input template file",
+    )
+    parser.add_argument("--harts", "-s", type=int, help="Number of Harts")
     parser.add_argument(
-        '--timers',
-        '-t',
+        "--timers",
+        "-t",
         type=int,
         default=1,
-        help='Number of Timers in a Hart. Maximum up to 32')
+        help="Number of Timers in a Hart. Maximum up to 32",
+    )
 
     args = parser.parse_args()
 

@@ -2,18 +2,18 @@
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 
-'''A wrapper for loading hjson files as used by dvsim's FlowCfg'''
+"""A wrapper for loading hjson files as used by dvsim's FlowCfg"""
 
 from utils import parse_hjson, subst_wildcards
 
 
 # A set of fields that can be overridden on the command line and shouldn't be
 # loaded from the hjson in that case.
-_CMDLINE_FIELDS = {'tool'}
+_CMDLINE_FIELDS = {"tool"}
 
 
 def load_hjson(path, initial_values):
-    '''Load an hjson file and any includes
+    """Load an hjson file and any includes
 
     Combines them all into a single dictionary, which is then returned. This
     does wildcard substitution on include names (since it might be needed to
@@ -23,7 +23,7 @@ def load_hjson(path, initial_values):
     is not modified). It needs to contain values for anything needed to resolve
     include files (typically, this is 'proj_root' and 'tool' (if set)).
 
-    '''
+    """
     worklist = [path]
     seen = {path}
     ret = initial_values.copy()
@@ -38,9 +38,10 @@ def load_hjson(path, initial_values):
         next_path = worklist.pop()
         new_paths = _load_single_file(ret, next_path, is_first, arg_keys)
         if set(new_paths) & seen:
-            raise RuntimeError('{!r}: The file {!r} appears more than once '
-                               'when processing includes.'
-                               .format(path, next_path))
+            raise RuntimeError(
+                "{!r}: The file {!r} appears more than once "
+                "when processing includes.".format(path, next_path)
+            )
         seen |= set(new_paths)
         worklist += new_paths
         is_first = False
@@ -49,15 +50,16 @@ def load_hjson(path, initial_values):
 
 
 def _load_single_file(target, path, is_first, arg_keys):
-    '''Load a single hjson file, merging its keys into target
+    """Load a single hjson file, merging its keys into target
 
     Returns a list of further includes that should be loaded.
 
-    '''
+    """
     hjson = parse_hjson(path)
     if not isinstance(hjson, dict):
-        raise RuntimeError('{!r}: Top-level hjson object is not a dictionary.'
-                           .format(path))
+        raise RuntimeError(
+            "{!r}: Top-level hjson object is not a dictionary.".format(path)
+        )
 
     import_cfgs = []
     for key, dict_val in hjson.items():
@@ -68,11 +70,12 @@ def _load_single_file(target, path, is_first, arg_keys):
 
         # If key is 'import_cfgs', this should be a list. Add each item to the
         # list of cfgs to process
-        if key == 'import_cfgs':
+        if key == "import_cfgs":
             if not isinstance(dict_val, list):
-                raise RuntimeError('{!r}: import_cfgs value is {!r}, but '
-                                   'should be a list.'
-                                   .format(path, dict_val))
+                raise RuntimeError(
+                    "{!r}: import_cfgs value is {!r}, but "
+                    "should be a list.".format(path, dict_val)
+                )
             import_cfgs += dict_val
             continue
 
@@ -83,33 +86,34 @@ def _load_single_file(target, path, is_first, arg_keys):
         #
         # If defined, check that it's a list, but then allow it to be set in
         # the target dictionary as usual.
-        if key == 'use_cfgs':
+        if key == "use_cfgs":
             if not is_first:
-                raise RuntimeError('{!r}: File is included by another one, '
-                                   'but defines "use_cfgs".'
-                                   .format(path))
+                raise RuntimeError(
+                    "{!r}: File is included by another one, "
+                    'but defines "use_cfgs".'.format(path)
+                )
             if not isinstance(dict_val, list):
-                raise RuntimeError('{!r}: use_cfgs must be a list. Saw {!r}.'
-                                   .format(path, dict_val))
+                raise RuntimeError(
+                    "{!r}: use_cfgs must be a list. Saw {!r}.".format(path, dict_val)
+                )
 
         # Otherwise, update target with this attribute
         set_target_attribute(path, target, key, dict_val)
 
     # Expand the names of imported configuration files as we return them
-    return [subst_wildcards(cfg_path,
-                            target,
-                            ignored_wildcards=[],
-                            ignore_error=False)
-            for cfg_path in import_cfgs]
+    return [
+        subst_wildcards(cfg_path, target, ignored_wildcards=[], ignore_error=False)
+        for cfg_path in import_cfgs
+    ]
 
 
 def set_target_attribute(path, target, key, dict_val):
-    '''Set an attribute on the target dictionary
+    """Set an attribute on the target dictionary
 
     This performs checks for conflicting values and merges lists /
     dictionaries.
 
-    '''
+    """
     old_val = target.get(key)
     if old_val is None:
         # A new attribute (or the old value was None, in which case it's
@@ -119,11 +123,13 @@ def set_target_attribute(path, target, key, dict_val):
 
     if isinstance(old_val, list):
         if not isinstance(dict_val, list):
-            raise RuntimeError('{!r}: Conflicting types for key {!r}: was '
-                               '{!r}, a list, but loaded value is {!r}, '
-                               'of type {}.'
-                               .format(path, key, old_val, dict_val,
-                                       type(dict_val).__name__))
+            raise RuntimeError(
+                "{!r}: Conflicting types for key {!r}: was "
+                "{!r}, a list, but loaded value is {!r}, "
+                "of type {}.".format(
+                    path, key, old_val, dict_val, type(dict_val).__name__
+                )
+            )
 
         # Lists are merged by concatenation
         target[key] += dict_val
@@ -137,15 +143,16 @@ def set_target_attribute(path, target, key, dict_val):
             defaults = st_defaults
             break
     if defaults is None:
-        raise RuntimeError('{!r}: Value for key {!r} is {!r}, of '
-                           'unknown type {}.'
-                           .format(path, key, dict_val,
-                                   type(dict_val).__name__))
+        raise RuntimeError(
+            "{!r}: Value for key {!r} is {!r}, of "
+            "unknown type {}.".format(path, key, dict_val, type(dict_val).__name__)
+        )
     if not isinstance(old_val, st_type):
-        raise RuntimeError('{!r}: Value for key {!r} is {!r}, but '
-                           'we already had the value {!r}, of an '
-                           'incompatible type.'
-                           .format(path, key, dict_val, old_val))
+        raise RuntimeError(
+            "{!r}: Value for key {!r} is {!r}, but "
+            "we already had the value {!r}, of an "
+            "incompatible type.".format(path, key, dict_val, old_val)
+        )
 
     # The types are compatible. If the values are equal, there's nothing more
     # to do
@@ -167,6 +174,9 @@ def set_target_attribute(path, target, key, dict_val):
         return
 
     # Neither value looks like a default. Raise an error.
-    raise RuntimeError('{!r}: Value for key {!r} is {!r}, but '
-                       'we already had a conflicting value of {!r}.'
-                       .format(path, key, dict_val, old_val))
+    raise RuntimeError(
+        "{!r}: Value for key {!r} is {!r}, but "
+        "we already had a conflicting value of {!r}.".format(
+            path, key, dict_val, old_val
+        )
+    )

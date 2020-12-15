@@ -12,18 +12,22 @@ from pkg_resources import resource_filename
 from .xbar import Xbar
 
 
-def generate_tb(xbar: Xbar,
-                dv_path: Path,
-                library_name: str = "ip") -> str:  # xbar: Xbar -> str
+def generate_tb(
+    xbar: Xbar, dv_path: Path, library_name: str = "ip"
+) -> str:  # xbar: Xbar -> str
     # list all the generate files for TB
     tb_files = [
-        "xbar_env_pkg__params.sv", "tb__xbar_connect.sv", "xbar.sim.core",
-        "xbar.bind.core", "xbar.bind.sv", "xbar.sim_cfg.hjson",
-        "xbar.testplan.hjson"
+        "xbar_env_pkg__params.sv",
+        "tb__xbar_connect.sv",
+        "xbar.sim.core",
+        "xbar.bind.core",
+        "xbar.bind.sv",
+        "xbar.sim_cfg.hjson",
+        "xbar.testplan.hjson",
     ]
 
     for fname in tb_files:
-        tpl = Template(filename=resource_filename('tlgen', fname + '.tpl'))
+        tpl = Template(filename=resource_filename("tlgen", fname + ".tpl"))
 
         # some files need to be renamed
         if fname == "xbar.sim.core":
@@ -39,13 +43,13 @@ def generate_tb(xbar: Xbar,
 
         # save testplan at data directory
         if fname == "xbar_%s_testplan.hjson" % (xbar.name):
-            data_filepath = dv_path / '../../data/autogen'
+            data_filepath = dv_path / "../../data/autogen"
             data_filepath.mkdir(parents=True, exist_ok=True)
             dv_filepath = data_filepath / fname
         else:
             dv_filepath = dv_path / fname
 
-        with dv_filepath.open(mode='w', encoding='UTF-8') as fout:
+        with dv_filepath.open(mode="w", encoding="UTF-8") as fout:
             try:
                 fout.write(tpl.render(xbar=xbar, library_name=library_name))
             except:  # noqa: E722 for general exception handling

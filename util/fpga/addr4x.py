@@ -28,18 +28,22 @@ srec_cat to suit with BRAM memory architecture which need word addressing"""
 
 def main(argv):
     parser = argparse.ArgumentParser(prog="addr4x.py", description=DESC)
-    parser.add_argument('--infile',
-                        '-i',
-                        dest='inputfile',
-                        type=argparse.FileType('r', encoding='UTF-8'),
-                        required=True,
-                        help='Input Mem file')
-    parser.add_argument('--outfile',
-                        '-o',
-                        dest='outputfile',
-                        type=argparse.FileType('w', encoding='UTF-8'),
-                        required=True,
-                        help='Output Mem file')
+    parser.add_argument(
+        "--infile",
+        "-i",
+        dest="inputfile",
+        type=argparse.FileType("r", encoding="UTF-8"),
+        required=True,
+        help="Input Mem file",
+    )
+    parser.add_argument(
+        "--outfile",
+        "-o",
+        dest="outputfile",
+        type=argparse.FileType("w", encoding="UTF-8"),
+        required=True,
+        help="Output Mem file",
+    )
     args = parser.parse_args()
     in_file_path = Path(args.inputfile.name).resolve()
     with open(in_file_path) as file:

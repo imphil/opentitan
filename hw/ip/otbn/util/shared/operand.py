@@ -7,12 +7,11 @@ from typing import List, Optional, Tuple
 
 from .encoding import Encoding
 from .encoding_scheme import EncSchemeField
-from .yaml_parse_helpers import (check_keys, check_bool,
-                                 check_str, get_optional_str)
+from .yaml_parse_helpers import check_keys, check_bool, check_str, get_optional_str
 
 
 class OperandType:
-    '''The base class for some sort of operand type
+    """The base class for some sort of operand type
 
     There are three representations of an operand:
 
@@ -38,33 +37,34 @@ class OperandType:
     string and operand value is essentially a call to Python's int() or str().
     The interesting conversion is between operand value and encoded value.
 
-    '''
+    """
+
     def __init__(self, width: Optional[int]) -> None:
         assert width is None or width > 0
         self.width = width
 
     def markdown_doc(self) -> Optional[str]:
-        '''Generate any (markdown) documentation for this operand type
+        """Generate any (markdown) documentation for this operand type
 
         The base class returns None, but subclasses might return something
         useful.
 
-        '''
+        """
         return None
 
     def syntax_determines_value(self) -> bool:
-        '''Can the value of this operand always be inferred from asm syntax?
+        """Can the value of this operand always be inferred from asm syntax?
 
         This is true for things like registers (the value "5" only comes from
         "r5", for example), but false for arbitrary immediates: an immediate
         operand might have a value that comes from a relocation. If this is
         true, neither str_to_op_val nor op_val_to_enc_val may return None.
 
-        '''
+        """
         return False
 
     def str_to_op_val(self, as_str: str) -> Optional[int]:
-        '''Read the given syntax and convert it to an operand value
+        """Read the given syntax and convert it to an operand value
 
         See the class docstring for what "operand value" means. Raises a
         ValueError on definite failure ("found cabbage when I expected a
@@ -74,13 +74,11 @@ class OperandType:
         This function doesn't check that the result will be encodable: chain it
         with op_val_to_enc_val for that.
 
-        '''
+        """
         raise NotImplementedError()
 
-    def op_val_to_enc_val(self,
-                          op_val: int,
-                          cur_pc: Optional[int]) -> Optional[int]:
-        '''Convert the operand value to an encoded value
+    def op_val_to_enc_val(self, op_val: int, cur_pc: Optional[int]) -> Optional[int]:
+        """Convert the operand value to an encoded value
 
         This expects a current PC in cur_pc. If we don't know that (because
         this is otbn-as, and we don't know our eventual current address), a
@@ -95,24 +93,26 @@ class OperandType:
         with no shift, signedness or other cleverness) so long as the width is
         known.
 
-        '''
+        """
         if self.width is None:
             return None
 
         if op_val < 0:
-            raise ValueError('Negative operand value {} for a basic operand '
-                             'that expects to encode an unsigned value in '
-                             '{} bits.'
-                             .format(op_val, self.width))
+            raise ValueError(
+                "Negative operand value {} for a basic operand "
+                "that expects to encode an unsigned value in "
+                "{} bits.".format(op_val, self.width)
+            )
         if op_val >> self.width:
-            raise ValueError('Operand value {} is too large for a basic '
-                             'operand of {} bits.'
-                             .format(op_val, self.width))
+            raise ValueError(
+                "Operand value {} is too large for a basic "
+                "operand of {} bits.".format(op_val, self.width)
+            )
 
         return op_val
 
     def enc_val_to_op_val(self, enc_val: int, cur_pc: int) -> Optional[int]:
-        '''Convert the encoded value to an operand value
+        """Convert the encoded value to an operand value
 
         This needs the current PC (for pc_rel immediates) and returns the
         logical op_val. The default implementation works for values that are
@@ -120,29 +120,29 @@ class OperandType:
 
         If we have a width, this function must not return None.
 
-        '''
+        """
         return enc_val
 
     def op_val_to_str(self, op_val: int) -> str:
-        '''Render an operand value as a string
+        """Render an operand value as a string
 
-        The default implemention just prints the integer.'''
+        The default implemention just prints the integer."""
         return str(op_val)
 
     def get_max_enc_val(self) -> Optional[int]:
-        '''Return the range of valid encoded values for this operand type
+        """Return the range of valid encoded values for this operand type
 
         The default implementation returns None if there is no width, and
         otherwise returns the maximum value that fits in width bits.
 
-        '''
+        """
         if self.width is None:
             return None
 
         return (1 << self.width) - 1
 
     def get_op_val_range(self, cur_pc: int) -> Optional[Tuple[int, int]]:
-        '''Return the range of representable operand values
+        """Return the range of representable operand values
 
         Returns None if this isn't known, for some reason.
 
@@ -152,7 +152,7 @@ class OperandType:
         value range). Note that this doesn't hold for 2's complement signed
         integers.
 
-        '''
+        """
         enc_hi = self.get_max_enc_val()
         if enc_hi is None:
             return None
@@ -166,13 +166,9 @@ class OperandType:
 
 
 class RegOperandType(OperandType):
-    '''A class representing a register operand type'''
-    TYPE_FMTS = {
-        'gpr': (5, 'x'),
-        'wdr': (5, 'w'),
-        'csr': (12, None),
-        'wsr': (8, None)
-    }
+    """A class representing a register operand type"""
+
+    TYPE_FMTS = {"gpr": (5, "x"), "wdr": (5, "w"), "csr": (12, None), "wsr": (8, None)}
 
     def __init__(self, reg_type: str, is_dest: bool) -> None:
         fmt = RegOperandType.TYPE_FMTS.get(reg_type)
@@ -185,21 +181,22 @@ class RegOperandType(OperandType):
         self._is_dest = is_dest
 
     @staticmethod
-    def make(reg_type: str,
-             is_dest: bool,
-             what: str,
-             scheme_field: Optional[EncSchemeField]) -> 'RegOperandType':
+    def make(
+        reg_type: str, is_dest: bool, what: str, scheme_field: Optional[EncSchemeField]
+    ) -> "RegOperandType":
         if scheme_field is not None:
             fmt = RegOperandType.TYPE_FMTS.get(reg_type)
             assert fmt is not None
             width, _ = fmt
 
             if scheme_field.bits.width != width:
-                raise ValueError('In {}, there is an encoding scheme that '
-                                 'allocates {} bits, but the operand has '
-                                 'register type {!r}, which expects {} bits.'
-                                 .format(what, scheme_field.bits.width,
-                                         reg_type, width))
+                raise ValueError(
+                    "In {}, there is an encoding scheme that "
+                    "allocates {} bits, but the operand has "
+                    "register type {!r}, which expects {} bits.".format(
+                        what, scheme_field.bits.width, reg_type, width
+                    )
+                )
 
         return RegOperandType(reg_type, is_dest)
 
@@ -209,17 +206,19 @@ class RegOperandType(OperandType):
     def str_to_op_val(self, as_str: str) -> int:
         width, pfx = RegOperandType.TYPE_FMTS[self.reg_type]
 
-        re_pfx = '' if pfx is None else re.escape(pfx)
-        match = re.match(re_pfx + '([0-9]+)$', as_str)
+        re_pfx = "" if pfx is None else re.escape(pfx)
+        match = re.match(re_pfx + "([0-9]+)$", as_str)
         if match is None:
-            raise ValueError("Expression {!r} can't be parsed as a {}."
-                             .format(as_str, self.reg_type))
+            raise ValueError(
+                "Expression {!r} can't be parsed as a {}.".format(as_str, self.reg_type)
+            )
 
         idx = int(match.group(1))
         assert 0 <= idx
         if idx >> width:
-            raise ValueError("Invalid register of type {}: {!r}."
-                             .format(self.reg_type, as_str))
+            raise ValueError(
+                "Invalid register of type {}: {!r}.".format(self.reg_type, as_str)
+            )
 
         return idx
 
@@ -229,27 +228,30 @@ class RegOperandType(OperandType):
         _, pfx = fmt
 
         if pfx is None:
-            pfx = ''
+            pfx = ""
 
-        return '{}{}'.format(pfx, op_val)
+        return "{}{}".format(pfx, op_val)
 
     def is_src(self) -> bool:
-        '''True if this operand is considered a source'''
-        return self.reg_type in ['csr', 'wsr'] or not self._is_dest
+        """True if this operand is considered a source"""
+        return self.reg_type in ["csr", "wsr"] or not self._is_dest
 
     def is_dest(self) -> bool:
-        '''True if this operand is considered a destination'''
-        return self._is_dest or self.reg_type in ['csr', 'wsr']
+        """True if this operand is considered a destination"""
+        return self._is_dest or self.reg_type in ["csr", "wsr"]
 
 
 class ImmOperandType(OperandType):
-    '''A class representing an immediate operand type'''
-    def __init__(self,
-                 width: Optional[int],
-                 enc_offset: int,
-                 shift: int,
-                 signed: bool,
-                 pc_rel: bool) -> None:
+    """A class representing an immediate operand type"""
+
+    def __init__(
+        self,
+        width: Optional[int],
+        enc_offset: int,
+        shift: int,
+        signed: bool,
+        pc_rel: bool,
+    ) -> None:
         assert shift >= 0
 
         super().__init__(width)
@@ -259,13 +261,15 @@ class ImmOperandType(OperandType):
         self.pc_rel = pc_rel
 
     @staticmethod
-    def make(width: Optional[int],
-             enc_offset: int,
-             shift: int,
-             signed: bool,
-             pc_rel: bool,
-             what: str,
-             scheme_field: Optional[EncSchemeField]) -> 'ImmOperandType':
+    def make(
+        width: Optional[int],
+        enc_offset: int,
+        shift: int,
+        signed: bool,
+        pc_rel: bool,
+        what: str,
+        scheme_field: Optional[EncSchemeField],
+    ) -> "ImmOperandType":
         if scheme_field is not None:
             # If there is an encoding scheme, check its width is compatible
             # with the operand type. If the operand type doesn't specify a
@@ -273,10 +277,13 @@ class ImmOperandType(OperandType):
             if width is None:
                 width = scheme_field.bits.width
             if scheme_field.bits.width != width:
-                raise ValueError('In {}, there is an encoding scheme that '
-                                 'allocates {} bits to the immediate operand '
-                                 'but the operand claims to have width {}.'
-                                 .format(what, scheme_field.bits.width, width))
+                raise ValueError(
+                    "In {}, there is an encoding scheme that "
+                    "allocates {} bits to the immediate operand "
+                    "but the operand claims to have width {}.".format(
+                        what, scheme_field.bits.width, width
+                    )
+                )
 
         return ImmOperandType(width, enc_offset, shift, signed, pc_rel)
 
@@ -288,13 +295,14 @@ class ImmOperandType(OperandType):
 
         rel_lo, rel_hi = rel_rng
         if self.shift == 0:
-            stp_msg = ''
+            stp_msg = ""
         else:
-            stp_msg = ' in steps of `{}`'.format(1 << self.shift)
+            stp_msg = " in steps of `{}`".format(1 << self.shift)
 
-        pc_pfx = '.+' if self.pc_rel else ''
-        return ('Valid range: `{}{}..{}{}`{}'
-                .format(pc_pfx, rel_lo, pc_pfx, rel_hi, stp_msg))
+        pc_pfx = ".+" if self.pc_rel else ""
+        return "Valid range: `{}{}..{}{}`{}".format(
+            pc_pfx, rel_lo, pc_pfx, rel_hi, stp_msg
+        )
 
     def str_to_op_val(self, as_str: str) -> Optional[int]:
         # Try to parse the literal as an integer. Give up safely if we can't
@@ -305,9 +313,7 @@ class ImmOperandType(OperandType):
         except ValueError:
             return None
 
-    def op_val_to_enc_val(self,
-                          op_val: int,
-                          cur_pc: Optional[int]) -> Optional[int]:
+    def op_val_to_enc_val(self, op_val: int, cur_pc: Optional[int]) -> Optional[int]:
         # Give up immediately if we don't know our width
         if self.width is None:
             return None
@@ -325,12 +331,17 @@ class ImmOperandType(OperandType):
         # Try to shift right. Check that we won't clobber any low bits.
         shift_mask = (1 << self.shift) - 1
         if pc_relative_val & shift_mask:
-            raise ValueError('Cannot encode the value {}: the operand has a '
-                             'shift of {}, but that would clobber some bits '
-                             '(because {} & {} = {}, not zero).'
-                             .format(pc_relative_val, self.shift,
-                                     pc_relative_val, shift_mask,
-                                     pc_relative_val & shift_mask))
+            raise ValueError(
+                "Cannot encode the value {}: the operand has a "
+                "shift of {}, but that would clobber some bits "
+                "(because {} & {} = {}, not zero).".format(
+                    pc_relative_val,
+                    self.shift,
+                    pc_relative_val,
+                    shift_mask,
+                    pc_relative_val & shift_mask,
+                )
+            )
 
         # Compute offset encoded value by applying shift and enc_offset
         shifted = pc_relative_val >> self.shift
@@ -347,14 +358,22 @@ class ImmOperandType(OperandType):
             assert doc_rng is not None
             doc_lo, doc_hi = doc_rng
 
-            encoded_msg = (', which encodes to {},'.format(offset_val)
-                           if self.shift != 0 or self.enc_offset != 0 else '')
-            raise ValueError('Cannot encode the value {}{} as a {}-bit '
-                             '{}signed value. Possible range: {}..{}.'
-                             .format(pc_relative_val, encoded_msg,
-                                     self.width,
-                                     '' if self.signed else 'un',
-                                     doc_lo, doc_hi))
+            encoded_msg = (
+                ", which encodes to {},".format(offset_val)
+                if self.shift != 0 or self.enc_offset != 0
+                else ""
+            )
+            raise ValueError(
+                "Cannot encode the value {}{} as a {}-bit "
+                "{}signed value. Possible range: {}..{}.".format(
+                    pc_relative_val,
+                    encoded_msg,
+                    self.width,
+                    "" if self.signed else "un",
+                    doc_lo,
+                    doc_hi,
+                )
+            )
 
         if self.signed:
             encoded = (1 << self.width) + offset_val if offset_val < 0 else offset_val
@@ -393,7 +412,7 @@ class ImmOperandType(OperandType):
         return rel_val
 
     def get_enc_range(self) -> Optional[Tuple[int, int]]:
-        '''Gets range of allowable encoded values'''
+        """Gets range of allowable encoded values"""
         if self.width is None:
             return None
 
@@ -407,9 +426,9 @@ class ImmOperandType(OperandType):
         return (sgn_lo, sgn_hi)
 
     def get_doc_range(self) -> Optional[Tuple[int, int]]:
-        '''Gets range of allowable values as they will appear in
+        """Gets range of allowable values as they will appear in
         documentation
-        '''
+        """
 
         enc_range = self.get_enc_range()
         if enc_range is None:
@@ -433,16 +452,16 @@ class ImmOperandType(OperandType):
 
 
 class EnumOperandType(OperandType):
-    '''A class representing an enum operand type
+    """A class representing an enum operand type
 
     Enum operands are case-insensitive: the names are stored lower case, and
     are matched with case-folding in read_index.
 
-    '''
-    def __init__(self,
-                 items: List[str],
-                 what: str,
-                 scheme_field: Optional[EncSchemeField]) -> None:
+    """
+
+    def __init__(
+        self, items: List[str], what: str, scheme_field: Optional[EncSchemeField]
+    ) -> None:
         assert items
 
         # The number of items gives a minimum width for the field. If there is
@@ -453,12 +472,14 @@ class EnumOperandType(OperandType):
             width = min_width
         else:
             if scheme_field.bits.width < min_width:
-                raise ValueError('In {}, there is an encoding scheme that '
-                                 'assigns {} bits to the field. But this '
-                                 'field is an enum with {} items, so needs '
-                                 'at least {} bits.'
-                                 .format(what, scheme_field.bits.width,
-                                         len(items), min_width))
+                raise ValueError(
+                    "In {}, there is an encoding scheme that "
+                    "assigns {} bits to the field. But this "
+                    "field is an enum with {} items, so needs "
+                    "at least {} bits.".format(
+                        what, scheme_field.bits.width, len(items), min_width
+                    )
+                )
             width = scheme_field.bits.width
 
         super().__init__(width)
@@ -466,13 +487,14 @@ class EnumOperandType(OperandType):
 
     def markdown_doc(self) -> Optional[str]:
         # Override from OperandType base class
-        parts = ['Syntax table:\n\n'
-                 '| Syntax | Value of immediate |\n'
-                 '|--------|--------------------|\n']
+        parts = [
+            "Syntax table:\n\n"
+            "| Syntax | Value of immediate |\n"
+            "|--------|--------------------|\n"
+        ]
         for idx, item in enumerate(self.items):
-            parts.append('| `{}` | `{}` |\n'
-                         .format(item, idx))
-        return ''.join(parts)
+            parts.append("| `{}` | `{}` |\n".format(item, idx))
+        return "".join(parts)
 
     def syntax_determines_value(self) -> bool:
         return True
@@ -483,10 +505,11 @@ class EnumOperandType(OperandType):
             if low_str == item:
                 return idx
 
-        known_vals = ', '.join(repr(item) for item in self.items)
-        raise ValueError('Invalid enum value, {!r}. '
-                         'Supported values: {}.'
-                         .format(as_str, known_vals))
+        known_vals = ", ".join(repr(item) for item in self.items)
+        raise ValueError(
+            "Invalid enum value, {!r}. "
+            "Supported values: {}.".format(as_str, known_vals)
+        )
 
     def op_val_to_str(self, op_val: int) -> str:
         # On a bad value, we have to return *something*. Since this is just
@@ -496,7 +519,7 @@ class EnumOperandType(OperandType):
         # Note that if the number of items in the enum is not a power of 2,
         # this could happen with a bad binary, despite good tools.
         if op_val < 0 or op_val >= len(self.items):
-            return '???'
+            return "???"
 
         return self.items[op_val]
 
@@ -505,16 +528,16 @@ class EnumOperandType(OperandType):
 
 
 class OptionOperandType(OperandType):
-    '''A class representing an option operand type
+    """A class representing an option operand type
 
     Option operands are case-insensitive: the option name is stored lower case,
     and is matched with case-folding in read_index.
 
-    '''
-    def __init__(self,
-                 option: str,
-                 what: str,
-                 scheme_field: Optional[EncSchemeField]) -> None:
+    """
+
+    def __init__(
+        self, option: str, what: str, scheme_field: Optional[EncSchemeField]
+    ) -> None:
 
         width = 1
         if scheme_field is not None:
@@ -526,7 +549,7 @@ class OptionOperandType(OperandType):
 
     def markdown_doc(self) -> Optional[str]:
         # Override from OperandType base class
-        return 'To specify, use the literal syntax `{}`\n'.format(self.option)
+        return "To specify, use the literal syntax `{}`\n".format(self.option)
 
     def syntax_determines_value(self) -> bool:
         return True
@@ -535,44 +558,45 @@ class OptionOperandType(OperandType):
         if as_str.lower() == self.option:
             return 1
 
-        raise ValueError('Invalid option value, {!r}. '
-                         'If specified, it should have been {!r}.'
-                         .format(as_str, self.option))
+        raise ValueError(
+            "Invalid option value, {!r}. "
+            "If specified, it should have been {!r}.".format(as_str, self.option)
+        )
 
     def op_val_to_str(self, op_val: int) -> str:
         assert op_val in [0, 1]
-        return self.option if op_val else ''
+        return self.option if op_val else ""
 
     def get_max_enc_val(self) -> int:
         return 1
 
 
-def parse_operand_type(fmt: str,
-                       pc_rel: bool,
-                       what: str,
-                       scheme_field: Optional[EncSchemeField]) -> OperandType:
-    '''Make sense of the operand type syntax'''
+def parse_operand_type(
+    fmt: str, pc_rel: bool, what: str, scheme_field: Optional[EncSchemeField]
+) -> OperandType:
+    """Make sense of the operand type syntax"""
     # Registers
     reg_fmts = {
-        'grs': ('gpr', False),
-        'grd': ('gpr', True),
-        'wrs': ('wdr', False),
-        'wrd': ('wdr', True),
-        'csr': ('csr', True),
-        'wsr': ('wsr', True)
+        "grs": ("gpr", False),
+        "grd": ("gpr", True),
+        "wrs": ("wdr", False),
+        "wrd": ("wdr", True),
+        "csr": ("csr", True),
+        "wsr": ("wsr", True),
     }
     reg_match = reg_fmts.get(fmt)
     if reg_match is not None:
         if pc_rel:
-            raise ValueError('In {}, the operand has type {!r} which is a '
-                             'type of register operand. It also has pc_rel '
-                             'set, which is only allowed for immediates.'
-                             .format(what, fmt))
+            raise ValueError(
+                "In {}, the operand has type {!r} which is a "
+                "type of register operand. It also has pc_rel "
+                "set, which is only allowed for immediates.".format(what, fmt)
+            )
         reg_type, is_dest = reg_match
         return RegOperandType.make(reg_type, is_dest, what, scheme_field)
 
     # Immediates
-    for base, signed in [('simm', True), ('uimm', False)]:
+    for base, signed in [("simm", True), ("uimm", False)]:
         # The type of an immediate operand is encoded as
         #
         #   BASE WIDTH? (+ENC_OFFSET)? (<<SHIFT)?
@@ -580,106 +604,113 @@ def parse_operand_type(fmt: str,
         # where BASE is 'simm' or 'uimm', WIDTH is a positive integer and
         # ENC_OFFSET and SHIFT are non-negative integers. The regex below
         # captures WIDTH as group 1, OFFSET as group 2 and SHIFT as group 3.
-        m = re.match(base + r'([1-9][0-9]*)?(?:\+([0-9]+))?(?:<<([0-9]+))?$', fmt)
+        m = re.match(base + r"([1-9][0-9]*)?(?:\+([0-9]+))?(?:<<([0-9]+))?$", fmt)
         if m is not None:
             width = int(m.group(1)) if m.group(1) is not None else None
             enc_offset = int(m.group(2)) if m.group(2) is not None else 0
             shift = int(m.group(3)) if m.group(3) is not None else 0
-            return ImmOperandType.make(width, enc_offset, shift, signed, pc_rel,
-                                       what, scheme_field)
+            return ImmOperandType.make(
+                width, enc_offset, shift, signed, pc_rel, what, scheme_field
+            )
 
-    m = re.match(r'enum\(([^\)]+)\)$', fmt)
+    m = re.match(r"enum\(([^\)]+)\)$", fmt)
     if m:
         if pc_rel:
-            raise ValueError('In {}, the operand is an enumeration, but also '
-                             'has pc_rel set, which is only allowed for bare '
-                             'immediates.'
-                             .format(what))
+            raise ValueError(
+                "In {}, the operand is an enumeration, but also "
+                "has pc_rel set, which is only allowed for bare "
+                "immediates.".format(what)
+            )
 
-        return EnumOperandType([item.strip()
-                                for item in m.group(1).split(',')],
-                               what, scheme_field)
-    m = re.match(r'option\(([^\)]+)\)$', fmt)
+        return EnumOperandType(
+            [item.strip() for item in m.group(1).split(",")], what, scheme_field
+        )
+    m = re.match(r"option\(([^\)]+)\)$", fmt)
     if m:
         if pc_rel:
-            raise ValueError('In {}, the operand is an option, but also '
-                             'has pc_rel set, which is only allowed for bare '
-                             'immediates.'
-                             .format(what))
+            raise ValueError(
+                "In {}, the operand is an option, but also "
+                "has pc_rel set, which is only allowed for bare "
+                "immediates.".format(what)
+            )
 
         return OptionOperandType(m.group(1).strip(), what, scheme_field)
 
-    raise ValueError("In {}, operand type description {!r} "
-                     "didn't match any recognised format."
-                     .format(what, fmt))
+    raise ValueError(
+        "In {}, operand type description {!r} "
+        "didn't match any recognised format.".format(what, fmt)
+    )
 
 
-def infer_operand_type(name: str,
-                       pc_rel: bool,
-                       what: str,
-                       scheme_field: Optional[EncSchemeField]) -> OperandType:
-    '''Try to guess an operand's type from its name'''
+def infer_operand_type(
+    name: str, pc_rel: bool, what: str, scheme_field: Optional[EncSchemeField]
+) -> OperandType:
+    """Try to guess an operand's type from its name"""
 
     op_type_name = None
-    if re.match(r'grs[0-9]*$', name):
-        op_type_name = 'grs'
-    elif name in ['grd', 'wrd', 'csr', 'wsr']:
+    if re.match(r"grs[0-9]*$", name):
+        op_type_name = "grs"
+    elif name in ["grd", "wrd", "csr", "wsr"]:
         op_type_name = name
-    elif re.match(r'wrs[0-9]*$', name):
-        op_type_name = 'wrs'
-    elif re.match(r'imm[0-9]*$', name) or name == 'offset':
-        op_type_name = 'simm'
+    elif re.match(r"wrs[0-9]*$", name):
+        op_type_name = "wrs"
+    elif re.match(r"imm[0-9]*$", name) or name == "offset":
+        op_type_name = "simm"
 
     if op_type_name is None:
-        raise ValueError("Operand name {!r} doesn't imply an operand type: "
-                         "you'll have to set the type explicitly."
-                         .format(name))
+        raise ValueError(
+            "Operand name {!r} doesn't imply an operand type: "
+            "you'll have to set the type explicitly.".format(name)
+        )
 
     return parse_operand_type(op_type_name, pc_rel, what, scheme_field)
 
 
-def make_operand_type(op_type_name: Optional[str],
-                      pc_rel: bool,
-                      operand_name: str,
-                      mnemonic: str,
-                      scheme_field: Optional[EncSchemeField]) -> OperandType:
-    '''Construct a type for an operand
+def make_operand_type(
+    op_type_name: Optional[str],
+    pc_rel: bool,
+    operand_name: str,
+    mnemonic: str,
+    scheme_field: Optional[EncSchemeField],
+) -> OperandType:
+    """Construct a type for an operand
 
     This is either based on the type, if given, or inferred from the name
     otherwise. If scheme_field is not None, this is the encoding scheme field
     that will be used.
 
-    '''
-    what = ('the type for the {!r} operand of instruction {!r}'
-            .format(operand_name, mnemonic))
-    return (parse_operand_type(op_type_name, pc_rel, what, scheme_field)
-            if op_type_name is not None
-            else infer_operand_type(operand_name, pc_rel, what, scheme_field))
+    """
+    what = "the type for the {!r} operand of instruction {!r}".format(
+        operand_name, mnemonic
+    )
+    return (
+        parse_operand_type(op_type_name, pc_rel, what, scheme_field)
+        if op_type_name is not None
+        else infer_operand_type(operand_name, pc_rel, what, scheme_field)
+    )
 
 
 class Operand:
-    def __init__(self,
-                 yml: object,
-                 mnemonic: str,
-                 insn_encoding: Optional[Encoding]) -> None:
+    def __init__(
+        self, yml: object, mnemonic: str, insn_encoding: Optional[Encoding]
+    ) -> None:
         # The YAML representation should be a string (a bare operand name) or a
         # dict.
-        what = 'operand for {!r} instruction'.format(mnemonic)
+        what = "operand for {!r} instruction".format(mnemonic)
         if isinstance(yml, str):
             name = yml
             op_type = None
             doc = None
             pc_rel = False
-            op_what = '{!r} {}'.format(name, what)
+            op_what = "{!r} {}".format(name, what)
         elif isinstance(yml, dict):
-            yd = check_keys(yml, what, ['name'], ['type', 'pc-rel', 'doc'])
-            name = check_str(yd['name'], 'name of ' + what)
+            yd = check_keys(yml, what, ["name"], ["type", "pc-rel", "doc"])
+            name = check_str(yd["name"], "name of " + what)
 
-            op_what = '{!r} {}'.format(name, what)
-            op_type = get_optional_str(yd, 'type', op_what)
-            pc_rel = check_bool(yd.get('pc-rel', False),
-                                'pc-rel field of ' + op_what)
-            doc = get_optional_str(yd, 'doc', op_what)
+            op_what = "{!r} {}".format(name, what)
+            op_type = get_optional_str(yd, "type", op_what)
+            pc_rel = check_bool(yd.get("pc-rel", False), "pc-rel field of " + op_what)
+            doc = get_optional_str(yd, "doc", op_what)
 
         # If there is an encoding, look up the encoding scheme field that
         # corresponds to this operand.
@@ -687,13 +718,15 @@ class Operand:
         if insn_encoding is not None:
             field_name = insn_encoding.op_to_field_name.get(name)
             if field_name is None:
-                raise ValueError('The {!r} instruction has an operand called '
-                                 '{!r}, but the associated encoding has no '
-                                 'field that encodes it.'
-                                 .format(mnemonic, name))
+                raise ValueError(
+                    "The {!r} instruction has an operand called "
+                    "{!r}, but the associated encoding has no "
+                    "field that encodes it.".format(mnemonic, name)
+                )
             enc_scheme_field = insn_encoding.fields[field_name].scheme_field
 
         self.name = name
-        self.op_type = make_operand_type(op_type, pc_rel, name,
-                                         mnemonic, enc_scheme_field)
+        self.op_type = make_operand_type(
+            op_type, pc_rel, name, mnemonic, enc_scheme_field
+        )
         self.doc = doc

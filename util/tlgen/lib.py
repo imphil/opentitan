@@ -6,8 +6,7 @@ import logging as log
 
 
 def is_pow2(v):
-    """Return true if value is power of two
-    """
+    """Return true if value is power of two"""
     if not isinstance(v, int):
         log.warning("is_pow2 received non-integer value {}".format(v))
         return False
@@ -37,7 +36,7 @@ def simplify_addr(dev, xbar):
 
     addrs = dev["addr_range"]
     # Sort based on the base addr
-    newlist = sorted(addrs, key=lambda k: int(k['base_addr'], 0))
+    newlist = sorted(addrs, key=lambda k: int(k["base_addr"], 0))
     # check if overlap or contiguous
     result = []
     for e in newlist:
@@ -46,16 +45,17 @@ def simplify_addr(dev, xbar):
             continue
         # if contiguous
         if int(e["base_addr"], 0) == int(result[-1]["base_addr"], 0) + int(
-                result[-1]["size_byte"], 0):
+            result[-1]["size_byte"], 0
+        ):
             # update previous entry size
             result[-1]["size_byte"] = "0x{:x}".format(
-                int(result[-1]["size_byte"], 0) + int(e["size_byte"], 0))
+                int(result[-1]["size_byte"], 0) + int(e["size_byte"], 0)
+            )
             continue
 
         if no_device_in_range(xbar, dev["name"], result[-1], e):
             # Determine if size can be power of 2 value
-            smallest_addr_gte = get_next_base_addr(e["base_addr"], xbar,
-                                                   dev["name"])
+            smallest_addr_gte = get_next_base_addr(e["base_addr"], xbar, dev["name"])
 
             # Choose next value
             if smallest_addr_gte == -1:
@@ -63,8 +63,11 @@ def simplify_addr(dev, xbar):
             else:
                 next_value = int(smallest_addr_gte["base_addr"], 0)
 
-            calc_size = int(e["base_addr"], 0) + int(e["size_byte"], 0) - int(
-                result[-1]["base_addr"], 0)
+            calc_size = (
+                int(e["base_addr"], 0)
+                + int(e["size_byte"], 0)
+                - int(result[-1]["base_addr"], 0)
+            )
 
             # find power of 2 if possible
             size_byte = find_pow2_size(result[-1], calc_size, next_value)
@@ -82,19 +85,19 @@ def simplify_addr(dev, xbar):
 
 
 def no_device_in_range(xbar, name, f, t):
-    """Check if other devices doesn't overlap with the range 'from <= x < to'
-    """
+    """Check if other devices doesn't overlap with the range 'from <= x < to'"""
     from_addr = int(f["base_addr"], 0) + int(f["size_byte"], 0)
     to_addr = int(t["base_addr"], 0)
 
     for node in [
-            x for x in xbar["nodes"]
-            if x["type"] == "device" and not x["name"] == name
+        x for x in xbar["nodes"] if x["type"] == "device" and not x["name"] == name
     ]:
         if "addr_range" not in node:
             # Xbar?
-            log.info("Xbar type node cannot be compared in this version.",
-                     "Please use in caution")
+            log.info(
+                "Xbar type node cannot be compared in this version.",
+                "Please use in caution",
+            )
             continue
         assert isinstance(node["addr_range"], list)
 
@@ -110,9 +113,7 @@ def no_device_in_range(xbar, name, f, t):
 
 
 def get_next_base_addr(addr, xbar, name):
-    """Return the least value of base_addr of the IP greater than addr
-
-    """
+    """Return the least value of base_addr of the IP greater than addr"""
     if isinstance(addr, str):
         value = int(addr, 0)
     else:
@@ -120,15 +121,17 @@ def get_next_base_addr(addr, xbar, name):
         value = addr
 
     device_list = [
-        x for x in xbar["nodes"]
-        if x["type"] == "device" and not x["name"] == name
+        x for x in xbar["nodes"] if x["type"] == "device" and not x["name"] == name
     ]
 
     try:
         addrs = [a for r in device_list for a in r["addr_range"]]
     except KeyError:
-        log.error("Address range is wrong.\n {}".format(
-            [x for x in device_list if "addr_range" not in x]))
+        log.error(
+            "Address range is wrong.\n {}".format(
+                [x for x in device_list if "addr_range" not in x]
+            )
+        )
         raise SystemExit()
 
     sorted_list = sorted(addrs, key=lambda k: int(k["base_addr"], 0))

@@ -9,7 +9,7 @@ from .reg import Reg, RegFile
 
 
 class CallStackError(Alert):
-    '''Raised when under- or over-flowing the call stack'''
+    """Raised when under- or over-flowing the call stack"""
 
     err_code = ERR_CODE_CALL_STACK
 
@@ -17,12 +17,12 @@ class CallStackError(Alert):
         self.is_overflow = is_overflow
 
     def __str__(self) -> str:
-        xflow = 'overflow' if self.is_overflow else 'underflow'
-        return 'Instruction caused {} of x1 call stack.'.format(xflow)
+        xflow = "overflow" if self.is_overflow else "underflow"
+        return "Instruction caused {} of x1 call stack.".format(xflow)
 
 
 class CallStackReg(Reg):
-    '''A register used to represent x1'''
+    """A register used to represent x1"""
 
     # The depth of the x1 call stack
     stack_depth = 8
@@ -38,7 +38,7 @@ class CallStackReg(Reg):
         if backdoor:
             # If a backdoor access, don't take note of the read. If the stack
             # turns out to be empty, return some "obviously bogus" value.
-            return self.stack[-1] if self.stack else 0xcafef00d
+            return self.stack[-1] if self.stack else 0xCAFEF00D
 
         if not self.stack:
             raise CallStackError(False)
@@ -70,10 +70,10 @@ class CallStackReg(Reg):
 
 
 class GPRs(RegFile):
-    '''The narrow OTBN register file'''
+    """The narrow OTBN register file"""
 
     def __init__(self) -> None:
-        super().__init__('x', 32, 32)
+        super().__init__("x", 32, 32)
         self._x1 = CallStackReg(self)
 
     def get_reg(self, idx: int) -> Reg:
@@ -89,7 +89,7 @@ class GPRs(RegFile):
             return super().get_reg(idx)
 
     def peek_call_stack(self) -> List[int]:
-        '''Get the call stack, bottom-first.'''
+        """Get the call stack, bottom-first."""
         return self._x1.stack
 
     def commit(self) -> None:
