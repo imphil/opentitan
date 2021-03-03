@@ -3,16 +3,16 @@ CAPI=2:
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 name: "lowrisc:ip:rv_plic_example:0.1"
-description: "RISC-V PLIC"
+description: "RISC-V PLIC in an exemplary parametrization"
 
 filesets:
   files_rtl:
     depend:
       - lowrisc:ip:rv_plic_component
     files:
-      - rtl/rv_plic_reg_pkg.sv
-      - rtl/rv_plic_reg_top.sv
-      - rtl/rv_plic.sv
+      - rtl/autogen/rv_plic_reg_pkg.sv
+      - rtl/autogen/rv_plic_reg_top.sv
+      - rtl/autogen/rv_plic.sv
     file_type: systemVerilogSource
 
 
@@ -38,6 +38,3 @@ targets:
         mode: lint-only
         verilator_options:
           - "-Wall"
-
-
-
