@@ -2,6 +2,7 @@
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 
+import contextlib
 import logging
 import re
 import subprocess
@@ -14,7 +15,7 @@ from .. import config, utils
 log = logging.getLogger(__name__)
 
 
-class VerilatorSimEarlgrey:
+class VerilatorSimEarlgrey(contextlib.AbstractContextManager):
     UART0_SPEED = 7200  # see device/lib/arch/device_sim_verilator.c
 
     def __init__(self, sim_path: Path, rom_elf_path: Path,
@@ -107,6 +108,8 @@ class VerilatorSimEarlgrey:
 
         self._log.info("Simulation startup completed.")
 
+        return self
+
     def uart0(self):
         if self._uart0 is None:
             log_dir_path = self._work_dir / 'uart0'
@@ -171,6 +174,8 @@ class VerilatorSimEarlgrey:
         except subprocess.TimeoutExpired:
             return None
 
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.terminate()
 
 @pytest.fixture(params=config.TEST_APPS_SELFCHECKING,
                 ids=lambda param: param['name'])
@@ -248,13 +253,10 @@ def test_apps_selfchecking(tmp_path, bin_dir, app_selfchecking):
     rom_elf_path = bin_dir / "sw/device/boot_rom/boot_rom_sim_verilator.elf"
     otp_img_path = bin_dir / "sw/device/otp_img/otp_img_sim_verilator.vmem"
 
-    sim = VerilatorSimEarlgrey(sim_path, rom_elf_path, otp_img_path, tmp_path)
+    with VerilatorSimEarlgrey(sim_path, rom_elf_path, otp_img_path, tmp_path) as sim:
+        sim.run(app_selfchecking[0], extra_sim_args=app_selfchecking[1])
 
-    sim.run(app_selfchecking[0], extra_sim_args=app_selfchecking[1])
-
-    assert_selfchecking_test_passes(sim)
-
-    sim.terminate()
+        assert_selfchecking_test_passes(sim)
 
 
 @pytest.mark.skip(
@@ -266,22 +268,18 @@ def test_spiflash(tmp_path, bin_dir):
     rom_elf_path = bin_dir / "sw/device/boot_rom/boot_rom_sim_verilator.elf"
     otp_img_path = bin_dir / "sw/device/otp_img/otp_img_sim_verilator.vmem"
 
-    sim = VerilatorSimEarlgrey(sim_path, rom_elf_path, otp_img_path, tmp_path)
-    sim.run()
+    with VerilatorSimEarlgrey(sim_path, rom_elf_path, otp_img_path, tmp_path).run() as sim:
+        log.debug("Waiting for simulation to be ready for SPI input")
+        spiwait_msg = b'HW initialisation completed, waiting for SPI input...'
+        assert sim.find_in_uart0(spiwait_msg, timeout=120)
 
-    log.debug("Waiting for simulation to be ready for SPI input")
-    spiwait_msg = b'HW initialisation completed, waiting for SPI input...'
-    assert sim.find_in_uart0(spiwait_msg, timeout=120)
+        log.debug("SPI is ready, continuing with spiload")
+        app_bin = bin_dir / 'sw/device/tests/dif_uart_smoketest_sim_verilator.bin'
+        spiflash = bin_dir / 'sw/host/spiflash/spiflash'
+        utils.load_sw_over_spi(tmp_path, spiflash, app_bin,
+                            ['--verilator', sim.spi0_device_path])
 
-    log.debug("SPI is ready, continuing with spiload")
-    app_bin = bin_dir / 'sw/device/tests/dif_uart_smoketest_sim_verilator.bin'
-    spiflash = bin_dir / 'sw/host/spiflash/spiflash'
-    utils.load_sw_over_spi(tmp_path, spiflash, app_bin,
-                           ['--verilator', sim.spi0_device_path])
-
-    assert_selfchecking_test_passes(sim)
-
-    sim.terminate()
+        assert_selfchecking_test_passes(sim)
 
 
 def test_openocd_basic_connectivity(tmp_path, bin_dir, topsrcdir, openocd):
@@ -296,43 +294,38 @@ def test_openocd_basic_connectivity(tmp_path, bin_dir, topsrcdir, openocd):
     rom_elf_path = bin_dir / "sw/device/boot_rom/boot_rom_sim_verilator.elf"
     otp_img_path = bin_dir / "sw/device/otp_img/otp_img_sim_verilator.vmem"
 
-    sim = VerilatorSimEarlgrey(sim_path, rom_elf_path, otp_img_path, tmp_path)
-    sim.run()
+    with VerilatorSimEarlgrey(sim_path, rom_elf_path, otp_img_path, tmp_path).run() as sim:
+        # Wait a bit until the system has reached the bootrom and a first arbitrary
+        # message has been printed to UART.
+        assert sim.find_in_uart0(re.compile(rb'.*I00000'), 120,
+                                filter_func=None), "No UART log message found."
 
-    # Wait a bit until the system has reached the bootrom and a first arbitrary
-    # message has been printed to UART.
-    assert sim.find_in_uart0(re.compile(rb'.*I00000'), 120,
-                             filter_func=None), "No UART log message found."
+        # Run OpenOCD to connect to design and then shut down again immediately.
+        cmd_openocd = [
+            openocd, '-s',
+            str(topsrcdir / 'util' / 'openocd'), '-f',
+            'board/lowrisc-earlgrey-verilator.cfg', '-c', 'init; shutdown'
+        ]
+        p_openocd = utils.Process(cmd_openocd, logdir=tmp_path, cwd=tmp_path)
+        p_openocd.run()
 
-    # Run OpenOCD to connect to design and then shut down again immediately.
-    cmd_openocd = [
-        openocd, '-s',
-        str(topsrcdir / 'util' / 'openocd'), '-f',
-        'board/lowrisc-earlgrey-verilator.cfg', '-c', 'init; shutdown'
-    ]
-    p_openocd = utils.Process(cmd_openocd, logdir=tmp_path, cwd=tmp_path)
-    p_openocd.run()
+        # Look for a message indicating that the right JTAG TAP was found.
+        msgs_exp = [
+            ('Info : JTAG tap: riscv.tap tap/device found: 0x04f5484d '
+            '(mfg: 0x426 (Google Inc), part: 0x4f54, ver: 0x0)'),
+            'Info : Examined RISC-V core; found 1 harts',
+            'Info :  hart 0: XLEN=32, misa=0x40101104',
+        ]
 
-    # Look for a message indicating that the right JTAG TAP was found.
-    msgs_exp = [
-        ('Info : JTAG tap: riscv.tap tap/device found: 0x04f5484d '
-         '(mfg: 0x426 (Google Inc), part: 0x4f54, ver: 0x0)'),
-        'Info : Examined RISC-V core; found 1 harts',
-        'Info :  hart 0: XLEN=32, misa=0x40101104',
-    ]
+        for msg_exp in msgs_exp:
+            msg = p_openocd.find_in_output(msg_exp, 1, from_start=True)
+            assert msg is not None, "Did not find message {!r} in OpenOCD output".format(
+                msg_exp)
 
-    for msg_exp in msgs_exp:
-        msg = p_openocd.find_in_output(msg_exp, 1, from_start=True)
-        assert msg is not None, "Did not find message {!r} in OpenOCD output".format(
-            msg_exp)
-
-    p_openocd.proc.wait(timeout=120)
-    try:
-        p_openocd.terminate()
-    except ProcessLookupError:
-        # OpenOCD process is already dead
-        pass
-    assert p_openocd.proc.returncode == 0
-
-    # End Verilator simulation
-    sim.terminate()
+        p_openocd.proc.wait(timeout=120)
+        try:
+            p_openocd.terminate()
+        except ProcessLookupError:
+            # OpenOCD process is already dead
+            pass
+        assert p_openocd.proc.returncode == 0
