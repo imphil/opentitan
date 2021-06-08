@@ -21,7 +21,7 @@
 
   // pass and fail patterns
   build_pass_patterns: []
-  build_fail_patterns: ["^ERROR:.*$"] // fusesoc build error
+  build_fail_patterns: []
   run_pass_patterns:   ["^TEST PASSED (UVM_)?CHECKS$"]
   run_fail_patterns:   ["^UVM_ERROR\\s[^:].*$",
                         "^UVM_FATAL\\s[^:].*$",
