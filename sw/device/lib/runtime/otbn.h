@@ -234,4 +234,14 @@ otbn_result_t otbn_copy_data_from_otbn(otbn_t *ctx, size_t len_bytes,
  */
 otbn_result_t otbn_zero_data_memory(otbn_t *ctx);
 
+/**
+ * Writes a LOG_INFO message with the contents of each 256b DMEM word.
+ *
+ * @param ctx The context object.
+ * @param max_addr The highest address to dump. Set to 0 to output the whole
+ *                 DMEM. Must be a multiple of WLEN.
+ * @return The result of the operation.
+ */
+otbn_result_t otbn_dump_dmem(const otbn_t *ctx, uint32_t max_addr);
+
 #endif  // OPENTITAN_SW_DEVICE_LIB_RUNTIME_OTBN_H_
